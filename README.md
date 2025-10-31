@@ -12,8 +12,6 @@ Welcome to ProFinance Tracker, your new best friend for managing personal financ
 
 [![Deploy with Vercel](https://vercel.com/button )](https://your-vercel-app-link.vercel.app )
 
-*(After deploying to Vercel, replace `https://your-vercel-app-link.vercel.app` with your actual application link. )*
-
 ---
 
 ### 📸 Application Preview
@@ -21,8 +19,6 @@ Welcome to ProFinance Tracker, your new best friend for managing personal financ
 Below is a preview of the application in both light and dark modes.
 
 ![ProFinance Tracker Light and Dark Mode](https://your-image-link-here.png )
-
-*(**How to add your image:** Take a screenshot of your app, upload it to a free image hosting site like [Imgur](https://imgur.com/upload ), and then replace `https://your-image-link-here.png` with the direct link to your image. )*
 
 ---
 
