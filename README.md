@@ -1,6 +1,6 @@
-# Vue 3 + TypeScript + Vite
-
 # ✨ ProFinance Tracker ✨
+
+# Vue 3 + TypeScript + Vite
 
 Welcome to ProFinance Tracker, your new best friend for managing personal finances! This sleek and powerful dashboard is designed to help you get a clear picture of your income and expenses, visualize your spending habits, and take control of your financial life.
 
