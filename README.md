@@ -21,6 +21,9 @@ Below is a preview of the application in both light and dark modes.
 **Light Mode**
 ![ProFinance Tracker Light Mode]([url=https://ibb.co/NgyGTc90] )
 
+https://ibb.co/NgyGTc90
+https://ibb.co/gZd623HX
+
 **Dark Mode**
 ![ProFinance Tracker Dark Mode]([url=https://ibb.co/gZd623HX] )
 
