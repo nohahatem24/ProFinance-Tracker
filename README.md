@@ -14,13 +14,11 @@ Welcome to ProFinance Tracker, your new best friend for managing personal financ
 
 ---
 
-<p align="center">
-  <img src="https://i.ibb.co/cKrsY46W/Light-Theme.png" alt="Light Theme" width="600">
-</p>
+### 🌙 Dark Theme
+![Dark Theme](https://i.ibb.co/KxDmPXRQ/Dark-Theme.png)
 
-<p align="center">
-  <img src="https://i.ibb.co/KxDmPXRQ/Dark-Theme.png" alt="Dark Theme" width="600">
-</p>
+### 🌞 Light Theme
+![Light Theme](https://ibb.co/NgyGTc90)
 
 ---
 
