@@ -2,8 +2,9 @@
 import { onMounted, ref } from "vue";
 import { useAuthStore } from "../stores/authStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import { useCurrencyStore } from "../stores/currencyStore";
 import { useRouter } from "vue-router";
-import type { Transaction } from '../types';
+import type { Transaction } from "../types";
 
 // استيراد المكونات
 import Navbar from "../components/Navbar.vue";
@@ -12,16 +13,18 @@ import TransactionForm from "../components/TransactionForm.vue";
 import CategoryChart from "../components/CategoryChart.vue";
 import PriorityChart from "../components/PriorityChart.vue";
 import RecentTransactions from "../components/RecentTransactions.vue";
+import CurrencySelector from "../components/CurrencySelector.vue";
 
 const authStore = useAuthStore();
 const transactionStore = useTransactionStore();
+const currencyStore = useCurrencyStore();
 const router = useRouter();
 
 const transactionToEdit = ref<Transaction | null>(null);
 
 const setTransactionToEdit = (transaction: Transaction) => {
   transactionToEdit.value = transaction;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 const clearTransactionToEdit = () => {
@@ -39,40 +42,115 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
-    <!-- 
-      --- إصلاح: التحقق من وجود user و email قبل التمرير ---
-      نمرر كائنًا جديدًا فقط إذا كان authStore.user و authStore.user.email موجودين.
-      هذا يضمن أن النوع الذي نمرره يطابق ما يتوقعه Navbar.
-    -->
-    <Navbar 
-      :user="authStore.user && authStore.user.email ? { email: authStore.user.email } : null" 
-      @logout="handleLogout" 
+  <div
+    class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300"
+  >
+    <Navbar
+      :user="
+        authStore.user && authStore.user.email
+          ? { email: authStore.user.email }
+          : null
+      "
+      @logout="handleLogout"
     />
 
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div class="px-4 py-6 sm:px-0 space-y-8">
-        
-        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg transition-colors duration-300">
+        <div
+          class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg transition-colors duration-300"
+        >
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white md:col-span-3">Filter Dashboard by Date Range</h3>
+            <h3
+              class="text-lg font-medium text-gray-900 dark:text-white md:col-span-3"
+            >
+              Filter Dashboard by Date Range
+            </h3>
             <div>
-              <label for="global-start-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300">From</label>
-              <input v-model="transactionStore.globalFilters.startDate" id="global-start-date" type="date" class="mt-1 filter-input">
+              <label
+                for="global-start-date"
+                class="block text-sm font-medium text-gray-600 dark:text-gray-300"
+                >From</label
+              >
+              <input
+                v-model="transactionStore.globalFilters.startDate"
+                id="global-start-date"
+                type="date"
+                class="mt-1 filter-input"
+              />
             </div>
             <div>
-              <label for="global-end-date" class="block text-sm font-medium text-gray-600 dark:text-gray-300">To</label>
-              <input v-model="transactionStore.globalFilters.endDate" id="global-end-date" type="date" class="mt-1 filter-input">
+              <label
+                for="global-end-date"
+                class="block text-sm font-medium text-gray-600 dark:text-gray-300"
+                >To</label
+              >
+              <input
+                v-model="transactionStore.globalFilters.endDate"
+                id="global-end-date"
+                type="date"
+                class="mt-1 filter-input"
+              />
             </div>
             <div>
-              <button @click="transactionStore.resetAllFilters" class="w-full bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                Reset All Filters
+              <button
+                @click="transactionStore.resetAllFilters"
+                class="w-full bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Reset Filters
               </button>
             </div>
           </div>
         </div>
 
-        <SummaryCards 
+        <!-- 
+          --- الإصلاح الرئيسي في الواجهة هنا ---
+          لقد قمنا بتغيير الشبكة من md:grid-cols-5 إلى md:grid-cols-3
+          لجعلها متناسقة تمامًا مع القسم الذي فوقها.
+        -->
+        <div
+          class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg transition-colors duration-300"
+        >
+          <h3
+            class="text-lg font-medium text-gray-900 dark:text-white mb-3 md:col-span-3"
+          >
+            Manual Currency Converter
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-600 dark:text-gray-300"
+                >Convert to this currency</label
+              >
+              <CurrencySelector v-model="transactionStore.targetCurrency" />
+            </div>
+
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-600 dark:text-gray-300"
+              >
+                1 {{ transactionStore.targetCurrency || "Target" }} =
+              </label>
+              <input
+                v-model.number="transactionStore.conversionRate"
+                type="number"
+                step="any"
+                :placeholder="`Rate in ${currencyStore.selectedCurrency}`"
+                class="mt-1 filter-input"
+              />
+            </div>
+
+            <div>
+              <button
+                @click="transactionStore.resetConversion"
+                class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <SummaryCards
           :income="transactionStore.totalIncome"
           :expenses="transactionStore.totalExpenses"
           :balance="transactionStore.balance"
@@ -80,9 +158,9 @@ onMounted(() => {
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div class="lg:col-span-1">
-            <TransactionForm 
-              :transaction-to-edit="transactionToEdit" 
-              @clear-edit="clearTransactionToEdit" 
+            <TransactionForm
+              :transaction-to-edit="transactionToEdit"
+              @clear-edit="clearTransactionToEdit"
             />
           </div>
           <div class="lg:col-span-2 space-y-8">
@@ -94,7 +172,6 @@ onMounted(() => {
         <div>
           <RecentTransactions @edit-transaction="setTransactionToEdit" />
         </div>
-
       </div>
     </main>
   </div>
