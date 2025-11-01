@@ -10,7 +10,7 @@ Welcome to ProFinance Tracker, your new best friend for managing personal financ
 
 **Check out the live application deployed on Vercel!**
 
-[![Deploy with Vercel](https://vercel.com/button )](https://your-vercel-app-link.vercel.app )
+[![Deploy with Vercel](https://vercel.com/button )](https://pro-finance-tracker.vercel.app/dashboard )
 
 ---
 
