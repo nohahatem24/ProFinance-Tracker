@@ -18,9 +18,10 @@ Welcome to ProFinance Tracker, your new best friend for managing personal financ
 
 Below is a preview of the application in both light and dark modes.
 
-![ProFinance Tracker Dark Mode](https://ibb.co/gZd623HX)
+![ProFinance Tracker Light Mode](https://i.ibb.co/NgyGTc9/light-mode.png )
 
-![ProFinance Tracker Light Mode](https://ibb.co/NgyGTc90)
+![ProFinance Tracker Dark Mode](https://i.ibb.co/gZd623H/dark-mode.png )
+
 
 ---
 
