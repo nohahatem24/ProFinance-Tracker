@@ -10,11 +10,20 @@ const emit = defineEmits(["clear-edit"]);
 
 const transactionStore = useTransactionStore();
 
+// --- **الإصلاح الرئيسي رقم 1: دالة لإنشاء تاريخ اليوم المحلي** ---
+const getTodayLocalISO = () => {
+  const now = new Date();
+  // نقوم بتعديل التاريخ ليعكس المنطقة الزمنية المحلية بدلاً من UTC
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().split("T")[0];
+};
+
 const description = ref("");
 const amount = ref<number | null>(null);
 const type = ref<"income" | "expense">("expense");
 const categoryId = ref<number | null>(null);
-const transactionDate = ref(new Date().toISOString().split("T")[0]);
+// نستخدم الدالة الجديدة لضبط التاريخ الافتراضي
+const transactionDate = ref(getTodayLocalISO());
 const priority = ref<"High" | "Medium" | "Low" | null>(null);
 const newCategoryName = ref("");
 
@@ -24,7 +33,7 @@ const resetFormFields = () => {
   type.value = "expense";
   categoryId.value = null;
   priority.value = null;
-  transactionDate.value = new Date().toISOString().split("T")[0];
+  transactionDate.value = getTodayLocalISO(); // إعادة الضبط للتاريخ المحلي
   newCategoryName.value = "";
 };
 
@@ -52,6 +61,7 @@ watch(
       amount.value = newVal.amount;
       type.value = newVal.type;
       categoryId.value = newVal.category_id;
+      // عند التعديل، نعرض التاريخ كما هو من قاعدة البيانات
       transactionDate.value = new Date(newVal.created_at)
         .toISOString()
         .split("T")[0];
@@ -99,12 +109,18 @@ const handleSubmit = async () => {
     return;
   }
 
+  // --- **الإصلاح الرئيسي رقم 2: إرسال التاريخ والوقت الحاليين معًا** ---
+  // إذا كان التاريخ المحدد هو تاريخ اليوم، نستخدم الوقت الحالي الدقيق.
+  // إذا كان تاريخًا قديمًا، نستخدم بداية اليوم لتجنب مشاكل التوقيت.
+  const isToday = transactionDate.value === getTodayLocalISO();
+  const finalDate = isToday ? new Date() : new Date(transactionDate.value);
+
   const transactionData = {
     description: description.value,
     amount: amount.value,
     type: type.value,
     category_id: type.value === "expense" ? finalCategoryId : null,
-    created_at: new Date(transactionDate.value).toISOString(),
+    created_at: finalDate.toISOString(), // نرسل التاريخ والوقت الكاملين
     priority: type.value === "expense" ? priority.value : null,
   };
 
@@ -122,7 +138,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <!-- إصلاح: إضافة كلاسات المظهر هنا -->
+  <!-- ... باقي الكود في الـ template يبقى كما هو تمامًا ... -->
   <div
     class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
   >
@@ -131,7 +147,6 @@ const handleSubmit = async () => {
     </h3>
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <div>
-        <!-- إصلاح: تحديث لون الـ label -->
         <label
           for="type"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
@@ -259,7 +274,6 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped lang="postcss">
-/* إصلاح: تحديث كلاس حقول الإدخال ليدعم المظهرين */
 .input-field {
   @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
 }

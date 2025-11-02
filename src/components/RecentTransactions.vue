@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useCurrencyStore } from "../stores/currencyStore";
-import type { Category } from "../types";
+import type { Category, Transaction } from "../types";
 
 const transactionStore = useTransactionStore();
 const currencyStore = useCurrencyStore();
@@ -13,13 +14,35 @@ const handleDelete = async (id: number) => {
   }
 };
 
+const sortedTransactions = computed(() => {
+  const transactionsCopy = [...transactionStore.locallyFilteredTransactions];
+  transactionsCopy.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  return transactionsCopy;
+});
+
+// --- **جديد: التحقق من أن التاريخ المفرد يقع ضمن النطاق الرئيسي** ---
+const isSingleDateOutOfRange = computed(() => {
+  const singleDate = transactionStore.localFilters.singleDate;
+  const { startDate, endDate } = transactionStore.globalFilters;
+
+  // لا تقم بإظهار الخطأ إذا لم يتم تحديد تاريخ مفرد أو نطاق رئيسي
+  if (!singleDate || !startDate || !endDate) {
+    return false;
+  }
+
+  // قم بإرجاع 'true' إذا كان التاريخ المفرد خارج النطاق
+  return singleDate < startDate || singleDate > endDate;
+});
+
 const getPriorityClass = (priority: string | null) => {
   if (priority === "High")
     return "bg-green-500/20 text-green-500 dark:text-green-400";
   if (priority === "Medium")
     return "bg-yellow-500/20 text-yellow-500 dark:text-yellow-400";
-  if (priority === "Low")
-    return "bg-red-500/20 text-red-500 dark:text-red-400";
+  if (priority === "Low") return "bg-red-500/20 text-red-500 dark:text-red-400";
   return "bg-gray-500/20 text-gray-400";
 };
 </script>
@@ -31,9 +54,12 @@ const getPriorityClass = (priority: string | null) => {
     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
       Transactions History
     </h3>
+
+    <!-- قسم الفلاتر -->
     <div
       class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
     >
+      <!-- ... (الفلاتر الأخرى تبقى كما هي) ... -->
       <div class="col-span-2 lg:col-span-1">
         <label
           for="filter-text"
@@ -102,6 +128,7 @@ const getPriorityClass = (priority: string | null) => {
           <option value="Low">Low</option>
         </select>
       </div>
+      <!-- **التعديل هنا: إضافة رسالة التنبيه** -->
       <div>
         <label
           for="filter-single-date"
@@ -114,6 +141,13 @@ const getPriorityClass = (priority: string | null) => {
           type="date"
           class="mt-1 filter-input"
         />
+        <!-- **جديد: رسالة التنبيه تظهر هنا عند وجود خطأ** -->
+        <p
+          v-if="isSingleDateOutOfRange"
+          class="text-xs text-red-600 dark:text-red-400 mt-1"
+        >
+          Date is outside the main filter range.
+        </p>
       </div>
       <div>
         <label class="block text-sm font-medium text-transparent">Reset</label>
@@ -125,10 +159,9 @@ const getPriorityClass = (priority: string | null) => {
         </button>
       </div>
     </div>
-    <div
-      v-if="transactionStore.locallyFilteredTransactions.length"
-      class="overflow-x-auto"
-    >
+
+    <!-- قسم الجدول (لا يوجد تغيير هنا) -->
+    <div v-if="sortedTransactions.length" class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-800">
           <tr>
@@ -162,10 +195,7 @@ const getPriorityClass = (priority: string | null) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <tr
-            v-for="t in transactionStore.locallyFilteredTransactions"
-            :key="t.id"
-          >
+          <tr v-for="t in sortedTransactions" :key="t.id">
             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0">
               <div class="flex items-center">
                 <div class="ml-4">
@@ -192,10 +222,6 @@ const getPriorityClass = (priority: string | null) => {
               "
             >
               {{ t.type === "income" ? "+" : "-" }}
-              <!-- 
-                --- الإصلاح الرئيسي هنا ---
-                نستخدم `|| undefined` لتحويل `null` إلى `undefined`، وهو ما تتوقعه الدالة.
-              -->
               {{
                 currencyStore.formatCurrency(
                   transactionStore.convertAmount(t.amount),

@@ -12,16 +12,26 @@ const password = ref("");
 const errorMessage = ref<string | null>(null);
 const showPassword = ref(false);
 
+// --- **الإصلاح الوحيد هنا: تحديث منطق التعامل مع الأخطاء** ---
 const handleRegister = async () => {
   errorMessage.value = null;
   try {
     await authStore.register(email.value, password.value);
+    // هذه الرسالة ستظهر فقط في حالة النجاح الحقيقي
     alert(
       "Registration successful! Please check your email to verify your account."
     );
     router.push("/login");
   } catch (error: any) {
-    errorMessage.value = error.message || "An unexpected error occurred.";
+    // نتحقق من رسالة الخطأ القادمة من Supabase
+    if (error.message && error.message.includes("User already registered")) {
+      // إذا كان المستخدم مسجلاً بالفعل، نعرض رسالة مخصصة
+      errorMessage.value =
+        "This email is already registered. Please log in instead.";
+    } else {
+      // لأي خطأ آخر، نعرض رسالة الخطأ العامة
+      errorMessage.value = error.message || "An unexpected error occurred.";
+    }
   }
 };
 </script>
