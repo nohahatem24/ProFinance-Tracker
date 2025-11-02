@@ -33,7 +33,7 @@ const filteredCurrencies = computed(() =>
     <Combobox v-model="model">
       <div class="relative">
         <ComboboxInput
-          class="w-full rounded-md border-0 bg-white dark:bg-gray-700 py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 dark:text-gray-200 focus:ring-0"
+          class="w-full rounded-md border-0 bg-gray-200 dark:bg-gray-700 py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 dark:text-gray-200 focus:ring-0"
           :display-value="
             (code: any) => (typeof code === 'string' ? code.toUpperCase() : '')
           "
