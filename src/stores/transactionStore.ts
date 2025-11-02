@@ -9,8 +9,6 @@ export const useTransactionStore = defineStore("transactions", () => {
   const categories = ref<Category[]>([]);
   const loading = ref(false);
 
-  // --- الإصلاح الجذري هنا ---
-  // helper: تنسيق التاريخ بصيغة yyyy-mm-dd بالزمن المحلي
   const formatDateLocal = (d: Date) => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -18,13 +16,11 @@ export const useTransactionStore = defineStore("transactions", () => {
     return `${y}-${m}-${day}`;
   };
 
-  // helper: إنشاء Date محلي من سلسلة yyyy-mm-dd
   const parseDateLocal = (yyyyMmDd: string) => {
     const [y, m, d] = yyyyMmDd.split("-").map(Number);
     return new Date(y, m - 1, d);
   };
 
-  // نقوم بإنشاء دالة لضبط التاريخ أولاً (الشهر التقويمي الحالي)
   const setDefaultDateFilters = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -36,9 +32,7 @@ export const useTransactionStore = defineStore("transactions", () => {
     };
   };
 
-  // ثم نستخدمها مباشرة عند تعريف globalFilters
   const globalFilters = ref(setDefaultDateFilters());
-  // -------------------------
 
   const localFilters = ref({
     text: "",
@@ -71,7 +65,6 @@ export const useTransactionStore = defineStore("transactions", () => {
     targetCurrency.value = null;
   };
 
-  // --- 1. حساب رصيد بداية الفترة (الرصيد المرحّل) ---
   const openingBalance = computed(() => {
     if (!globalFilters.value.startDate) return 0;
     const startDate = parseDateLocal(globalFilters.value.startDate);
@@ -88,10 +81,9 @@ export const useTransactionStore = defineStore("transactions", () => {
     return previousIncome - previousExpenses;
   });
 
-  // --- 2. المعاملات خلال الفترة المحددة فقط ---
   const globallyFilteredTransactions = computed(() => {
     const { startDate, endDate } = globalFilters.value;
-    if (!startDate || !endDate) return []; // التأكد من وجود القيم
+    if (!startDate || !endDate) return [];
     return allTransactions.value.filter((t) => {
       const transactionDate = formatDateLocal(new Date(t.created_at));
       if (transactionDate < startDate) return false;
@@ -100,7 +92,6 @@ export const useTransactionStore = defineStore("transactions", () => {
     });
   });
 
-  // --- 3. الدخل والمصروفات الجديدة خلال الفترة ---
   const incomeThisPeriod = computed(() =>
     globallyFilteredTransactions.value
       .filter((t) => t.type === "income")
@@ -113,20 +104,15 @@ export const useTransactionStore = defineStore("transactions", () => {
       .reduce((sum, t) => sum + t.amount, 0)
   );
 
-  // --- 4. بناء القيم النهائية للعرض بناءً على المنطق الصحيح ---
-
-  // "Total Available" = الرصيد المرحّل (إذا كان موجبًا) + الدخل الجديد
   const totalIncome = computed(() => {
-    const carryOver = Math.max(0, openingBalance.value); // لا نرحل رصيدًا سالبًا كدخل
+    const carryOver = Math.max(0, openingBalance.value);
     return incomeThisPeriod.value + carryOver;
   });
 
-  // "Total Expenses" = المصروفات الجديدة فقط
   const totalExpenses = computed(() => {
     return expensesThisPeriod.value;
   });
 
-  // "Final Balance" = الرصيد المرحّل + الدخل الجديد - المصروفات الجديدة
   const balance = computed(() => {
     return (
       openingBalance.value + incomeThisPeriod.value - expensesThisPeriod.value
@@ -171,10 +157,12 @@ export const useTransactionStore = defineStore("transactions", () => {
 
   const fetchTransactions = async () => {
     loading.value = true;
+    // --- **الإصلاح الرئيسي هنا: إضافة الترتيب** ---
     const { data, error } = await supabase
       .from("transactions")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }); // <-- هذا يضمن الترتيب من الأحدث للأقدم
+
     if (error) {
       console.error("Error fetching transactions:", error);
     } else {

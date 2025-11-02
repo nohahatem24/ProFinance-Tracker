@@ -2,14 +2,12 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { supabase } from "../services/supabase";
 import type { User } from "@supabase/supabase-js";
-import type { Router } from "vue-router"; // <-- 1. استيراد نوع Router
+import type { Router } from "vue-router"; // <-- **الإصلاح هنا**
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
 
-  // دالة لتسجيل الدخول مع تحديد الأنواع
   async function login(email: string, password: string) {
-    // <-- 2. تحديد الأنواع
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
@@ -18,9 +16,7 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = data.user;
   }
 
-  // دالة لإنشاء حساب جديد مع تحديد الأنواع
   async function register(email: string, password: string) {
-    // <-- 3. تحديد الأنواع
     const { data, error } = await supabase.auth.signUp({
       email: email,
       password: password,
@@ -29,16 +25,14 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = data.user;
   }
 
-  // دالة لتسجيل الخروج مع تحديد النوع واستخدام الـ router
+  // **الإصلاح هنا: تحديد نوع 'router'**
   async function logout(router: Router) {
-    // <-- 4. تعديل دالة logout
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     user.value = null;
-    router.push({ name: "login" }); // الانتقال إلى صفحة الدخول
+    router.push({ name: "login" });
   }
 
-  // دالة للتحقق من حالة المستخدم عند تحميل التطبيق
   async function checkUser() {
     const { data } = await supabase.auth.getUser();
     user.value = data.user;

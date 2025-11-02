@@ -4,12 +4,14 @@ import { useCurrencyStore } from "../stores/currencyStore";
 import { SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
 import CurrencySelector from "./CurrencySelector.vue";
 import { watch } from "vue";
+import type { User } from "@supabase/supabase-js"; // <-- **الإصلاح هنا**
 
 const themeStore = useThemeStore();
 const currencyStore = useCurrencyStore();
 
+// **الإصلاح هنا: تغيير النوع ليطابق كائن المستخدم من Supabase**
 defineProps<{
-  user: { email: string } | null;
+  user: User | null;
 }>();
 
 const emit = defineEmits(["logout"]);
@@ -30,7 +32,6 @@ watch(
   >
     <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
       <div class="relative flex items-center justify-between h-16">
-        <!-- الجزء الأيسر: اسم التطبيق (نص متجاوب) -->
         <div class="flex-shrink-0">
           <h1
             class="text-2xl font-bold text-indigo-700 dark:text-indigo-200 leading-tight"
@@ -40,7 +41,6 @@ watch(
           </h1>
         </div>
 
-        <!-- الجزء الأيمن: عناصر التحكم -->
         <div class="flex items-center gap-2 sm:gap-4">
           <div class="w-40 sm:w-80">
             <CurrencySelector v-model="currencyStore.selectedCurrency" />
@@ -66,7 +66,6 @@ watch(
         </div>
       </div>
 
-      <!-- رسالة الترحيب في سطر منفصل -->
       <div
         v-if="user"
         class="pb-2 px-1 text-md font-semibold text-gray-500 dark:text-gray-400"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch, computed } from "vue"; // **الإصلاح: إضافة watch و computed**
 import { useAuthStore } from "../stores/authStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useCurrencyStore } from "../stores/currencyStore";
@@ -22,6 +22,26 @@ const router = useRouter();
 
 const transactionToEdit = ref<Transaction | null>(null);
 
+// --- **جديد: منطق التحقق من صحة التواريخ** ---
+const dateErrorMessage = ref<string | null>(null);
+
+watch(
+  () => transactionStore.globalFilters,
+  (newFilters) => {
+    if (newFilters.startDate && newFilters.endDate) {
+      if (newFilters.endDate < newFilters.startDate) {
+        dateErrorMessage.value = "End date cannot be before the start date.";
+      } else {
+        dateErrorMessage.value = null; // مسح الخطأ إذا كانت التواريخ صحيحة
+      }
+    }
+  },
+  { deep: true }
+);
+
+const hasDateError = computed(() => !!dateErrorMessage.value);
+// -----------------------------------------
+
 const setTransactionToEdit = (transaction: Transaction) => {
   transactionToEdit.value = transaction;
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -32,6 +52,7 @@ const clearTransactionToEdit = () => {
 };
 
 const handleLogout = () => {
+  // **الإصلاح: تمرير 'router' إلى دالة logout**
   authStore.logout(router);
 };
 
@@ -45,14 +66,7 @@ onMounted(() => {
   <div
     class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300"
   >
-    <Navbar
-      :user="
-        authStore.user && authStore.user.email
-          ? { email: authStore.user.email }
-          : null
-      "
-      @logout="handleLogout"
-    />
+    <Navbar :user="authStore.user" @logout="handleLogout" />
 
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div class="px-4 py-6 sm:px-0 space-y-8">
@@ -100,13 +114,17 @@ onMounted(() => {
               </button>
             </div>
           </div>
+          <!-- **جديد: عرض رسالة الخطأ هنا** -->
+          <div
+            v-if="dateErrorMessage"
+            class="mt-3 p-3 bg-red-500/10 rounded-md"
+          >
+            <p class="text-sm text-red-500 dark:text-red-400">
+              {{ dateErrorMessage }}
+            </p>
+          </div>
         </div>
 
-        <!-- 
-          --- الإصلاح الرئيسي في الواجهة هنا ---
-          لقد قمنا بتغيير الشبكة من md:grid-cols-5 إلى md:grid-cols-3
-          لجعلها متناسقة تمامًا مع القسم الذي فوقها.
-        -->
         <div
           class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg transition-colors duration-300"
         >
@@ -150,27 +168,40 @@ onMounted(() => {
           </div>
         </div>
 
-        <SummaryCards
-          :income="transactionStore.totalIncome"
-          :expenses="transactionStore.totalExpenses"
-          :balance="transactionStore.balance"
-        />
+        <!-- **جديد: إخفاء المحتوى الرئيسي عند وجود خطأ في التاريخ** -->
+        <div v-if="!hasDateError">
+          <SummaryCards />
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div class="lg:col-span-1">
-            <TransactionForm
-              :transaction-to-edit="transactionToEdit"
-              @clear-edit="clearTransactionToEdit"
-            />
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+            <div class="lg:col-span-1">
+              <TransactionForm
+                :transaction-to-edit="transactionToEdit"
+                @clear-edit="clearTransactionToEdit"
+              />
+            </div>
+            <div class="lg:col-span-2 space-y-8">
+              <CategoryChart />
+              <PriorityChart />
+            </div>
           </div>
-          <div class="lg:col-span-2 space-y-8">
-            <CategoryChart />
-            <PriorityChart />
+
+          <div class="mt-8">
+            <RecentTransactions @edit-transaction="setTransactionToEdit" />
           </div>
         </div>
 
-        <div>
-          <RecentTransactions @edit-transaction="setTransactionToEdit" />
+        <!-- **جديد: رسالة بديلة عند وجود خطأ في التاريخ** -->
+        <div
+          v-else
+          class="text-center py-10 bg-white dark:bg-gray-800 rounded-lg shadow-md"
+        >
+          <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">
+            Invalid Date Range
+          </h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Please select a valid start and end date to view your financial
+            summary.
+          </p>
         </div>
       </div>
     </main>
