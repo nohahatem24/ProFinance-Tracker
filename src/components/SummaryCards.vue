@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useCurrencyStore } from "../stores/currencyStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 const currencyStore = useCurrencyStore();
 const transactionStore = useTransactionStore();
-
-// **الإصلاح هنا: تمت إزالة defineProps بالكامل**
 </script>
 
 <template>
@@ -15,10 +15,9 @@ const transactionStore = useTransactionStore();
       class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
     >
       <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
-        Total Income
+        {{ t("total_income") }}
       </h3>
       <div class="mt-2">
-        <!-- **الإصلاح هنا: استخدام transactionStore مباشرة** -->
         <span
           class="text-3xl font-bold tracking-tight text-green-500 dark:text-green-400"
         >
@@ -26,7 +25,7 @@ const transactionStore = useTransactionStore();
         </span>
         <span
           v-if="transactionStore.targetCurrency"
-          class="ml-2 text-lg font-medium text-gray-500 dark:text-gray-400"
+          class="text-lg font-medium text-gray-500 dark:text-gray-400 ltr:ml-2 rtl:mr-2"
         >
           (~{{
             currencyStore.formatCurrency(
@@ -37,12 +36,13 @@ const transactionStore = useTransactionStore();
         </span>
       </div>
     </div>
+
     <!-- Total Expenses Card -->
     <div
       class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
     >
       <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
-        Total Expenses
+        {{ t("total_expenses") }}
       </h3>
       <div class="mt-2">
         <span
@@ -52,7 +52,7 @@ const transactionStore = useTransactionStore();
         </span>
         <span
           v-if="transactionStore.targetCurrency"
-          class="ml-2 text-lg font-medium text-gray-500 dark:text-gray-400"
+          class="text-lg font-medium text-gray-500 dark:text-gray-400 ltr:ml-2 rtl:mr-2"
         >
           (~{{
             currencyStore.formatCurrency(
@@ -63,12 +63,13 @@ const transactionStore = useTransactionStore();
         </span>
       </div>
     </div>
+
     <!-- Final Balance Card -->
     <div
       class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
     >
       <h3 class="text-sm font-medium text-gray-900 dark:text-white">
-        Final Balance
+        {{ t("balance") }}
       </h3>
       <div class="mt-2">
         <span
@@ -83,7 +84,7 @@ const transactionStore = useTransactionStore();
         </span>
         <span
           v-if="transactionStore.targetCurrency"
-          class="ml-2 text-lg font-medium text-gray-500 dark:text-gray-400"
+          class="text-lg font-medium text-gray-500 dark:text-gray-400 ltr:ml-2 rtl:mr-2"
         >
           (~{{
             currencyStore.formatCurrency(

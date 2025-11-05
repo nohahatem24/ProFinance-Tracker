@@ -16,16 +16,10 @@ export const useTransactionStore = defineStore("transactions", () => {
     return `${y}-${m}-${day}`;
   };
 
-  const parseDateLocal = (yyyyMmDd: string) => {
-    const [y, m, d] = yyyyMmDd.split("-").map(Number);
-    return new Date(y, m - 1, d);
-  };
-
   const setDefaultDateFilters = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
     return {
       startDate: formatDateLocal(firstDay),
       endDate: formatDateLocal(lastDay),
@@ -35,24 +29,17 @@ export const useTransactionStore = defineStore("transactions", () => {
   const globalFilters = ref(setDefaultDateFilters());
 
   const localFilters = ref({
-    text: "",
-    type: "all" as "all" | "income" | "expense",
-    category: "all" as number | "all",
-    priority: "all" as "all" | "High" | "Medium" | "Low",
     singleDate: "",
+    type: null as "income" | "expense" | null,
+    category: null as number | null,
+    priority: null as "High" | "Medium" | "Low" | null,
   });
 
   const conversionRate = ref<number | null>(null);
   const targetCurrency = ref<string | null>(null);
 
   const resetLocalFilters = () => {
-    localFilters.value = {
-      text: "",
-      type: "all",
-      category: "all",
-      priority: "all",
-      singleDate: "",
-    };
+    localFilters.value = { singleDate: "", type: null, category: null, priority: null };
   };
 
   const resetAllFilters = () => {
@@ -65,59 +52,34 @@ export const useTransactionStore = defineStore("transactions", () => {
     targetCurrency.value = null;
   };
 
-  const openingBalance = computed(() => {
-    if (!globalFilters.value.startDate) return 0;
-    const startDate = parseDateLocal(globalFilters.value.startDate);
-    const previousTransactions = allTransactions.value.filter((t) => {
-      const txDate = parseDateLocal(formatDateLocal(new Date(t.created_at)));
-      return txDate < startDate;
-    });
-    const previousIncome = previousTransactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + t.amount, 0);
-    const previousExpenses = previousTransactions
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + t.amount, 0);
-    return previousIncome - previousExpenses;
-  });
-
   const globallyFilteredTransactions = computed(() => {
     const { startDate, endDate } = globalFilters.value;
-    if (!startDate || !endDate) return [];
+    if (!startDate || !endDate) return allTransactions.value; // **إصلاح مهم: أرجع كل المعاملات إذا لم تكن هناك فلاتر تاريخ**
+    
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
     return allTransactions.value.filter((t) => {
-      const transactionDate = formatDateLocal(new Date(t.created_at));
-      if (transactionDate < startDate) return false;
-      if (transactionDate > endDate) return false;
-      return true;
+      const transactionDate = new Date(t.created_at);
+      return transactionDate >= start && transactionDate <= end;
     });
   });
 
-  const incomeThisPeriod = computed(() =>
+  const totalIncome = computed(() =>
     globallyFilteredTransactions.value
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + t.amount, 0)
   );
 
-  const expensesThisPeriod = computed(() =>
+  const totalExpenses = computed(() =>
     globallyFilteredTransactions.value
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0)
   );
 
-  const totalIncome = computed(() => {
-    const carryOver = Math.max(0, openingBalance.value);
-    return incomeThisPeriod.value + carryOver;
-  });
-
-  const totalExpenses = computed(() => {
-    return expensesThisPeriod.value;
-  });
-
-  const balance = computed(() => {
-    return (
-      openingBalance.value + incomeThisPeriod.value - expensesThisPeriod.value
-    );
-  });
+  const balance = computed(() => totalIncome.value - totalExpenses.value);
 
   const convertAmount = (amount: number): number => {
     if (conversionRate.value && conversionRate.value > 0) {
@@ -126,45 +88,16 @@ export const useTransactionStore = defineStore("transactions", () => {
     return amount;
   };
 
-  const locallyFilteredTransactions = computed(() => {
-    return globallyFilteredTransactions.value.filter((t) => {
-      const textMatch =
-        !localFilters.value.text ||
-        t.description
-          .toLowerCase()
-          .includes(localFilters.value.text.toLowerCase());
-      const typeMatch =
-        localFilters.value.type === "all" || t.type === localFilters.value.type;
-      const categoryMatch =
-        localFilters.value.category === "all" ||
-        t.category_id === localFilters.value.category;
-      const priorityMatch =
-        localFilters.value.priority === "all" ||
-        t.priority === localFilters.value.priority;
-      const singleDateMatch =
-        !localFilters.value.singleDate ||
-        formatDateLocal(new Date(t.created_at)) ===
-          localFilters.value.singleDate;
-      return (
-        textMatch &&
-        typeMatch &&
-        categoryMatch &&
-        priorityMatch &&
-        singleDateMatch
-      );
-    });
-  });
-
   const fetchTransactions = async () => {
     loading.value = true;
-    // --- **الإصلاح الرئيسي هنا: إضافة الترتيب** ---
     const { data, error } = await supabase
       .from("transactions")
-      .select("*")
-      .order("created_at", { ascending: false }); // <-- هذا يضمن الترتيب من الأحدث للأقدم
+      .select("*, categories(id, name)")
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching transactions:", error);
+      allTransactions.value = [];
     } else {
       allTransactions.value = data || [];
     }
@@ -177,53 +110,32 @@ export const useTransactionStore = defineStore("transactions", () => {
     else categories.value = data || [];
   };
 
-  const addTransaction = async (
-    transaction: Omit<Transaction, "id" | "user_id">
-  ) => {
+  const addTransaction = async (transaction: Omit<Transaction, "id" | "user_id">) => {
     const authStore = useAuthStore();
     if (!authStore.user) return;
-    const { data, error } = await supabase
-      .from("transactions")
-      .insert([{ ...transaction, user_id: authStore.user.id }])
-      .select()
-      .single();
+    const { error } = await supabase.from("transactions").insert([{ ...transaction, user_id: authStore.user.id }]);
     if (error) console.error("Error adding transaction:", error);
-    else if (data) await fetchTransactions();
+    else await fetchTransactions();
   };
 
-  const updateTransaction = async (
-    id: number,
-    updates: Partial<Omit<Transaction, "id" | "user_id">>
-  ) => {
-    const { data, error } = await supabase
-      .from("transactions")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .single();
+  const updateTransaction = async (id: number, updates: Partial<Omit<Transaction, "id" | "user_id">>) => {
+    const { error } = await supabase.from("transactions").update(updates).eq("id", id);
     if (error) console.error("Error updating transaction:", error);
-    else if (data) await fetchTransactions();
+    else await fetchTransactions();
   };
 
   const deleteTransaction = async (id: number) => {
     const { error } = await supabase.from("transactions").delete().eq("id", id);
     if (error) console.error("Error deleting transaction:", error);
-    else
-      allTransactions.value = allTransactions.value.filter((t) => t.id !== id);
+    else allTransactions.value = allTransactions.value.filter((t) => t.id !== id);
   };
 
   const addCategory = async (name: string): Promise<Category | null> => {
     const authStore = useAuthStore();
     if (!authStore.user) return null;
-    const existingCategory = categories.value.find(
-      (c) => c.name.toLowerCase() === name.toLowerCase()
-    );
+    const existingCategory = categories.value.find((c) => c.name.toLowerCase() === name.toLowerCase());
     if (existingCategory) return existingCategory;
-    const { data, error } = await supabase
-      .from("categories")
-      .insert([{ name, user_id: authStore.user.id }])
-      .select()
-      .single();
+    const { data, error } = await supabase.from("categories").insert([{ name, user_id: authStore.user.id }]).select().single();
     if (error) {
       console.error("Error adding category:", error);
       return null;
@@ -236,28 +148,10 @@ export const useTransactionStore = defineStore("transactions", () => {
   };
 
   return {
-    allTransactions,
-    categories,
-    loading,
-    globalFilters,
-    localFilters,
-    conversionRate,
-    targetCurrency,
-    resetLocalFilters,
-    resetAllFilters,
-    resetConversion,
-    openingBalance,
-    globallyFilteredTransactions,
-    locallyFilteredTransactions,
-    totalIncome,
-    totalExpenses,
-    balance,
-    convertAmount,
-    fetchTransactions,
-    fetchCategories,
-    addTransaction,
-    updateTransaction,
-    deleteTransaction,
-    addCategory,
+    allTransactions, categories, loading, globalFilters, localFilters,
+    conversionRate, targetCurrency, resetLocalFilters, resetAllFilters,
+    resetConversion, globallyFilteredTransactions, totalIncome, totalExpenses,
+    balance, convertAmount, fetchTransactions, fetchCategories, addTransaction,
+    updateTransaction, deleteTransaction, addCategory,
   };
 });

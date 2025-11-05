@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, computed } from "vue"; // **الإصلاح: إضافة watch و computed**
+import { onMounted, ref, watch, computed } from "vue";
 import { useAuthStore } from "../stores/authStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useCurrencyStore } from "../stores/currencyStore";
 import { useRouter } from "vue-router";
 import type { Transaction } from "../types";
+import { useI18n } from "vue-i18n";
 
-// استيراد المكونات
 import Navbar from "../components/Navbar.vue";
 import SummaryCards from "../components/SummaryCards.vue";
 import TransactionForm from "../components/TransactionForm.vue";
@@ -15,14 +15,14 @@ import PriorityChart from "../components/PriorityChart.vue";
 import RecentTransactions from "../components/RecentTransactions.vue";
 import CurrencySelector from "../components/CurrencySelector.vue";
 
+const { t } = useI18n();
+
 const authStore = useAuthStore();
 const transactionStore = useTransactionStore();
 const currencyStore = useCurrencyStore();
 const router = useRouter();
 
 const transactionToEdit = ref<Transaction | null>(null);
-
-// --- **جديد: منطق التحقق من صحة التواريخ** ---
 const dateErrorMessage = ref<string | null>(null);
 
 watch(
@@ -30,9 +30,9 @@ watch(
   (newFilters) => {
     if (newFilters.startDate && newFilters.endDate) {
       if (newFilters.endDate < newFilters.startDate) {
-        dateErrorMessage.value = "End date cannot be before the start date.";
+        dateErrorMessage.value = t("date_error_end_before_start");
       } else {
-        dateErrorMessage.value = null; // مسح الخطأ إذا كانت التواريخ صحيحة
+        dateErrorMessage.value = null;
       }
     }
   },
@@ -40,7 +40,6 @@ watch(
 );
 
 const hasDateError = computed(() => !!dateErrorMessage.value);
-// -----------------------------------------
 
 const setTransactionToEdit = (transaction: Transaction) => {
   transactionToEdit.value = transaction;
@@ -52,7 +51,6 @@ const clearTransactionToEdit = () => {
 };
 
 const handleLogout = () => {
-  // **الإصلاح: تمرير 'router' إلى دالة logout**
   authStore.logout(router);
 };
 
@@ -77,13 +75,13 @@ onMounted(() => {
             <h3
               class="text-lg font-medium text-gray-900 dark:text-white md:col-span-3"
             >
-              Filter Dashboard by Date Range
+              {{ t("filter_dashboard_by_date") }}
             </h3>
             <div>
               <label
                 for="global-start-date"
                 class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-                >From</label
+                >{{ t("from") }}</label
               >
               <input
                 v-model="transactionStore.globalFilters.startDate"
@@ -96,7 +94,7 @@ onMounted(() => {
               <label
                 for="global-end-date"
                 class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-                >To</label
+                >{{ t("to") }}</label
               >
               <input
                 v-model="transactionStore.globalFilters.endDate"
@@ -110,11 +108,10 @@ onMounted(() => {
                 @click="transactionStore.resetAllFilters"
                 class="w-full bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors"
               >
-                Reset Filters
+                {{ t("reset_filters") }}
               </button>
             </div>
           </div>
-          <!-- **جديد: عرض رسالة الخطأ هنا** -->
           <div
             v-if="dateErrorMessage"
             class="mt-3 p-3 bg-red-500/10 rounded-md"
@@ -131,13 +128,13 @@ onMounted(() => {
           <h3
             class="text-lg font-medium text-gray-900 dark:text-white mb-3 md:col-span-3"
           >
-            Manual Currency Converter
+            {{ t("manual_currency_converter") }}
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
               <label
                 class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-                >Convert to this currency</label
+                >{{ t("convert_to_currency") }}</label
               >
               <CurrencySelector v-model="transactionStore.targetCurrency" />
             </div>
@@ -146,13 +143,21 @@ onMounted(() => {
               <label
                 class="block text-sm font-medium text-gray-600 dark:text-gray-300"
               >
-                1 {{ transactionStore.targetCurrency || "Target" }} =
+                {{
+                  t("target_currency_rate", {
+                    targetCurrency: transactionStore.targetCurrency || "Target",
+                  })
+                }}
               </label>
               <input
                 v-model.number="transactionStore.conversionRate"
                 type="number"
                 step="any"
-                :placeholder="`Rate in ${currencyStore.selectedCurrency}`"
+                :placeholder="
+                  t('rate_in_currency', {
+                    selectedCurrency: currencyStore.selectedCurrency,
+                  })
+                "
                 class="mt-1 filter-input"
               />
             </div>
@@ -162,13 +167,12 @@ onMounted(() => {
                 @click="transactionStore.resetConversion"
                 class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
               >
-                Reset
+                {{ t("reset_conversion") }}
               </button>
             </div>
           </div>
         </div>
 
-        <!-- **جديد: إخفاء المحتوى الرئيسي عند وجود خطأ في التاريخ** -->
         <div v-if="!hasDateError">
           <SummaryCards />
 
@@ -190,17 +194,15 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- **جديد: رسالة بديلة عند وجود خطأ في التاريخ** -->
         <div
           v-else
           class="text-center py-10 bg-white dark:bg-gray-800 rounded-lg shadow-md"
         >
           <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">
-            Invalid Date Range
+            {{ t("invalid_date_range") }}
           </h3>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            Please select a valid start and end date to view your financial
-            summary.
+            {{ t("invalid_date_message") }}
           </p>
         </div>
       </div>

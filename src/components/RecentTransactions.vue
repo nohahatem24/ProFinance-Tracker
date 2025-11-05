@@ -2,265 +2,277 @@
 import { computed } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useCurrencyStore } from "../stores/currencyStore";
-import type { Category, Transaction } from "../types";
+import { PencilIcon, TrashIcon } from "@heroicons/vue/24/outline";
+import type { Transaction } from "../types";
+import { useI18n } from "vue-i18n";
+import ExportOptions from "./ExportOptions.vue";
 
+const { t, locale } = useI18n();
 const transactionStore = useTransactionStore();
 const currencyStore = useCurrencyStore();
-const emit = defineEmits(["edit-transaction"]);
 
-const handleDelete = async (id: number) => {
-  if (confirm("Are you sure you want to delete this transaction?")) {
+const rtlLocales = ["ar", "he", "fa", "ur"];
+const isRtl = computed(() => rtlLocales.includes(locale.value));
+
+const emit = defineEmits<{
+  (e: "edit-transaction", transaction: Transaction): void;
+}>();
+
+const setTransactionToEdit = (transaction: Transaction) => {
+  emit("edit-transaction", transaction);
+};
+
+const deleteTransaction = async (id: number) => {
+  if (confirm(t("confirm_delete_transaction"))) {
     await transactionStore.deleteTransaction(id);
   }
 };
 
-const sortedTransactions = computed(() => {
-  const transactionsCopy = [...transactionStore.locallyFilteredTransactions];
-  transactionsCopy.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-  return transactionsCopy;
+const filteredTransactions = computed(() => {
+  return transactionStore.globallyFilteredTransactions
+    .filter((t) => {
+      const { singleDate, type, category, priority } =
+        transactionStore.localFilters;
+
+      const singleDateMatch =
+        !singleDate ||
+        new Date(t.created_at).toISOString().split("T")[0] === singleDate;
+      const typeMatch = !type || t.type === type;
+      const categoryMatch = !category || t.category_id === category;
+      const priorityMatch = !priority || t.priority === priority;
+
+      return singleDateMatch && typeMatch && categoryMatch && priorityMatch;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 });
 
-// --- **جديد: التحقق من أن التاريخ المفرد يقع ضمن النطاق الرئيسي** ---
-const isSingleDateOutOfRange = computed(() => {
-  const singleDate = transactionStore.localFilters.singleDate;
-  const { startDate, endDate } = transactionStore.globalFilters;
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString);
+  return {
+    datePart: date.toLocaleDateString(),
+    timePart: date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+};
 
-  // لا تقم بإظهار الخطأ إذا لم يتم تحديد تاريخ مفرد أو نطاق رئيسي
-  if (!singleDate || !startDate || !endDate) {
-    return false;
+const getCategoryName = (id: number | null) => {
+  if (!id) return t("n_a");
+  const category = transactionStore.categories.find((c) => c.id === id);
+  return category ? t(category.name.toLowerCase()) : t("n_a");
+};
+
+const getPriorityColor = (priority: string | null) => {
+  switch (priority) {
+    case "Low":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+    case "Medium":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+    case "High":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
   }
+};
 
-  // قم بإرجاع 'true' إذا كان التاريخ المفرد خارج النطاق
-  return singleDate < startDate || singleDate > endDate;
-});
-
-const getPriorityClass = (priority: string | null) => {
-  if (priority === "High")
-    return "bg-green-500/20 text-green-500 dark:text-green-400";
-  if (priority === "Medium")
-    return "bg-yellow-500/20 text-yellow-500 dark:text-yellow-400";
-  if (priority === "Low") return "bg-red-500/20 text-red-500 dark:text-red-400";
-  return "bg-gray-500/20 text-gray-400";
+// --- الدالة الجديدة ---
+const getTypeColorClass = (type: string) => {
+  if (type === "income") {
+    return "text-green-600 dark:text-green-400";
+  } else if (type === "expense") {
+    return "text-red-500 dark:text-red-400";
+  }
+  return "";
 };
 </script>
 
 <template>
   <div
     class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
+    :dir="isRtl ? 'rtl' : 'ltr'"
   >
-    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-      Transactions History
-    </h3>
-
-    <!-- قسم الفلاتر -->
-    <div
-      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+    <!-- ... باقي الفلاتر ... -->
+    <h3
+      class="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-start"
     >
-      <!-- ... (الفلاتر الأخرى تبقى كما هي) ... -->
-      <div class="col-span-2 lg:col-span-1">
+      {{ t("transaction_history") }}
+    </h3>
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4"
+    >
+      <div>
         <label
-          for="filter-text"
+          for="single-date"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Search</label
+          >{{ t("filter_by_date") }}</label
         >
         <input
-          v-model="transactionStore.localFilters.text"
-          id="filter-text"
-          type="text"
-          placeholder="Filter by description..."
+          v-model="transactionStore.localFilters.singleDate"
+          id="single-date"
+          type="date"
           class="mt-1 filter-input"
         />
       </div>
       <div>
         <label
-          for="filter-type"
+          for="type-filter"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Type</label
+          >{{ t("filter_by_type") }}</label
         >
         <select
           v-model="transactionStore.localFilters.type"
-          id="filter-type"
-          class="mt-1 filter-input"
+          id="type-filter"
+          class="mt-1 filter-input select-input"
         >
-          <option value="all">All</option>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
+          <option :value="null">{{ t("all_types") }}</option>
+          <option value="income">{{ t("income") }}</option>
+          <option value="expense">{{ t("expense") }}</option>
         </select>
       </div>
       <div>
         <label
-          for="filter-category"
+          for="category-filter"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Category</label
+          >{{ t("filter_by_category") }}</label
         >
         <select
           v-model="transactionStore.localFilters.category"
-          id="filter-category"
-          class="mt-1 filter-input"
+          id="category-filter"
+          class="mt-1 filter-input select-input"
         >
-          <option value="all">All</option>
+          <option :value="null">{{ t("all_categories") }}</option>
           <option
-            v-for="cat in transactionStore.categories"
-            :key="cat.id"
-            :value="cat.id"
+            v-for="category in transactionStore.categories"
+            :key="category.id"
+            :value="category.id"
           >
-            {{ cat.name }}
+            {{ t(category.name.toLowerCase()) }}
           </option>
         </select>
       </div>
       <div>
         <label
-          for="filter-priority"
+          for="priority-filter"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Priority</label
+          >{{ t("filter_by_priority") }}</label
         >
         <select
           v-model="transactionStore.localFilters.priority"
-          id="filter-priority"
-          class="mt-1 filter-input"
+          id="priority-filter"
+          class="mt-1 filter-input select-input"
         >
-          <option value="all">All</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
+          <option :value="null">{{ t("all_priorities") }}</option>
+          <option value="High">{{ t("high") }}</option>
+          <option value="Medium">{{ t("medium") }}</option>
+          <option value="Low">{{ t("low") }}</option>
         </select>
       </div>
-      <!-- **التعديل هنا: إضافة رسالة التنبيه** -->
-      <div>
-        <label
-          for="filter-single-date"
-          class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >By Day</label
-        >
-        <input
-          v-model="transactionStore.localFilters.singleDate"
-          id="filter-single-date"
-          type="date"
-          class="mt-1 filter-input"
-        />
-        <!-- **جديد: رسالة التنبيه تظهر هنا عند وجود خطأ** -->
-        <p
-          v-if="isSingleDateOutOfRange"
-          class="text-xs text-red-600 dark:text-red-400 mt-1"
-        >
-          Date is outside the main filter range.
-        </p>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-transparent">Reset</label>
+      <div class="flex items-end">
         <button
           @click="transactionStore.resetLocalFilters"
           class="w-full bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors"
         >
-          Reset
+          {{ t("reset") }}
         </button>
       </div>
     </div>
-
-    <!-- قسم الجدول (لا يوجد تغيير هنا) -->
-    <div v-if="sortedTransactions.length" class="overflow-x-auto">
+    <div class="my-6"><ExportOptions /></div>
+    <div class="overflow-x-auto max-h-96">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead class="bg-gray-50 dark:bg-gray-800">
+        <thead class="bg-indigo-50 dark:bg-gray-700 sticky top-0">
           <tr>
-            <th
-              scope="col"
-              class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-300 sm:pl-0"
-            >
-              Transaction
-            </th>
-            <th
-              scope="col"
-              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-300"
-            >
-              Amount
-            </th>
-            <th
-              scope="col"
-              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-300"
-            >
-              Priority
-            </th>
-            <th
-              scope="col"
-              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-300"
-            >
-              Date
-            </th>
-            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
-              <span class="sr-only">Actions</span>
-            </th>
+            <th scope="col" class="table-header">{{ t("date") }}</th>
+            <th scope="col" class="table-header">{{ t("description") }}</th>
+            <th scope="col" class="table-header">{{ t("type") }}</th>
+            <th scope="col" class="table-header">{{ t("amount") }}</th>
+            <th scope="col" class="table-header">{{ t("category") }}</th>
+            <th scope="col" class="table-header">{{ t("priority") }}</th>
+            <th scope="col" class="table-header">{{ t("actions") }}</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <tr v-for="t in sortedTransactions" :key="t.id">
-            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0">
-              <div class="flex items-center">
-                <div class="ml-4">
-                  <div class="font-medium text-gray-900 dark:text-white">
-                    {{ t.description }}
-                  </div>
-                  <div class="text-gray-500 dark:text-gray-400">
-                    {{
-                      transactionStore.categories.find(
-                        (c: Category) => c.id === t.category_id
-                      )?.name ||
-                      (t.type === "income" ? "Income" : "Uncategorized")
-                    }}
-                  </div>
-                </div>
+        <tbody
+          class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
+        >
+          <tr v-if="transactionStore.loading">
+            <td
+              colspan="7"
+              class="text-center py-4 text-gray-500 dark:text-gray-400"
+            >
+              Loading...
+            </td>
+          </tr>
+          <tr v-else-if="filteredTransactions.length === 0">
+            <td
+              colspan="7"
+              class="text-center py-4 text-gray-500 dark:text-gray-400"
+            >
+              {{ t("no_transactions_found") }}
+            </td>
+          </tr>
+          <tr
+            v-else
+            v-for="transaction in filteredTransactions"
+            :key="transaction.id"
+          >
+            <td class="table-cell">
+              <div class="flex flex-col">
+                <span class="font-bold">{{
+                  formatDateTime(transaction.created_at).datePart
+                }}</span>
+                <span class="text-xs text-gray-500">{{
+                  formatDateTime(transaction.created_at).timePart
+                }}</span>
               </div>
             </td>
+            <td class="table-cell">{{ transaction.description }}</td>
+            <!-- **التعديل الجديد هنا** -->
             <td
-              class="whitespace-nowrap px-3 py-4 text-sm"
-              :class="
-                t.type === 'income'
-                  ? 'text-green-500 dark:text-green-400'
-                  : 'text-red-500 dark:text-red-400'
-              "
+              class="table-cell font-medium"
+              :class="getTypeColorClass(transaction.type)"
             >
-              {{ t.type === "income" ? "+" : "-" }}
-              {{
-                currencyStore.formatCurrency(
-                  transactionStore.convertAmount(t.amount),
-                  transactionStore.targetCurrency || undefined
-                )
-              }}
+              {{ t(transaction.type) }}
             </td>
+            <!-- **التعديل الجديد هنا** -->
             <td
-              class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300"
+              class="table-cell font-medium"
+              :class="getTypeColorClass(transaction.type)"
             >
+              <span v-if="transaction.type === 'income'">+</span>
+              <span v-else>-</span>
+              {{ currencyStore.selectedCurrency }}
+              {{ transaction.amount.toFixed(2) }}
+            </td>
+            <td class="table-cell">
+              {{ getCategoryName(transaction.category_id) }}
+            </td>
+            <td class="table-cell">
               <span
-                v-if="t.priority"
-                class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                :class="getPriorityClass(t.priority)"
-                >{{ t.priority }}</span
+                :class="getPriorityColor(transaction.priority)"
+                class="priority-badge"
+                >{{
+                  transaction.priority
+                    ? t(transaction.priority.toLowerCase())
+                    : t("n_a")
+                }}</span
               >
             </td>
-            <td
-              class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400"
-            >
-              {{ new Date(t.created_at).toLocaleDateString() }}
-            </td>
-            <td
-              class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0"
-            >
-              <div class="flex items-center justify-end gap-4">
+            <td class="table-cell">
+              <div class="flex items-center justify-center space-x-2">
                 <button
-                  @click="emit('edit-transaction', t)"
-                  class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
-                  title="Edit"
+                  @click="setTransactionToEdit(transaction)"
+                  class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
                 >
-                  Edit
+                  <PencilIcon class="w-5 h-5" />
                 </button>
                 <button
-                  @click="handleDelete(t.id)"
-                  class="text-red-600 dark:text-red-500 hover:text-red-800 dark:hover:text-red-400"
-                  title="Delete"
+                  @click="deleteTransaction(transaction.id)"
+                  class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200"
                 >
-                  Delete
+                  <TrashIcon class="w-5 h-5" />
                 </button>
               </div>
             </td>
@@ -268,16 +280,48 @@ const getPriorityClass = (priority: string | null) => {
         </tbody>
       </table>
     </div>
-    <div v-else class="text-center py-8">
-      <p class="text-gray-500 dark:text-gray-400">
-        No transactions match your filters.
-      </p>
-    </div>
   </div>
 </template>
 
 <style scoped lang="postcss">
 .filter-input {
-  @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
+  @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
+}
+
+.select-input {
+  @apply appearance-none bg-no-repeat;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-size: 1.5em 1.5em;
+}
+
+[dir="ltr"] .select-input {
+  background-position: right 0.5rem center;
+  @apply pr-10 pl-3;
+}
+
+[dir="rtl"] .select-input {
+  background-position: left 0.5rem center;
+  @apply pl-10 pr-3;
+}
+
+.table-header {
+  @apply px-4 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider;
+}
+.table-cell {
+  @apply px-4 py-4 whitespace-nowrap text-sm;
+}
+.priority-badge {
+  @apply px-2 inline-flex text-xs leading-5 font-semibold rounded-full;
+}
+
+[dir="rtl"] .table-header,
+[dir="rtl"] .table-cell,
+[dir="rtl"] h3,
+[dir="rtl"] label {
+  @apply text-right;
+}
+
+[dir="rtl"] .flex.space-x-2 {
+  @apply space-x-reverse;
 }
 </style>

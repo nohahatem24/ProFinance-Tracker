@@ -2,6 +2,12 @@
 import { ref, watch, computed } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import type { Transaction, Category } from "../types";
+import { useI18n } from "vue-i18n";
+
+// --- 1. إضافة locale و isRtl ---
+const { t, locale } = useI18n();
+const rtlLocales = ["ar", "he", "fa", "ur"];
+const isRtl = computed(() => rtlLocales.includes(locale.value));
 
 const props = defineProps<{
   transactionToEdit: Transaction | null;
@@ -10,10 +16,8 @@ const emit = defineEmits(["clear-edit"]);
 
 const transactionStore = useTransactionStore();
 
-// --- **الإصلاح الرئيسي رقم 1: دالة لإنشاء تاريخ اليوم المحلي** ---
 const getTodayLocalISO = () => {
   const now = new Date();
-  // نقوم بتعديل التاريخ ليعكس المنطقة الزمنية المحلية بدلاً من UTC
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().split("T")[0];
 };
@@ -22,7 +26,6 @@ const description = ref("");
 const amount = ref<number | null>(null);
 const type = ref<"income" | "expense">("expense");
 const categoryId = ref<number | null>(null);
-// نستخدم الدالة الجديدة لضبط التاريخ الافتراضي
 const transactionDate = ref(getTodayLocalISO());
 const priority = ref<"High" | "Medium" | "Low" | null>(null);
 const newCategoryName = ref("");
@@ -33,7 +36,7 @@ const resetFormFields = () => {
   type.value = "expense";
   categoryId.value = null;
   priority.value = null;
-  transactionDate.value = getTodayLocalISO(); // إعادة الضبط للتاريخ المحلي
+  transactionDate.value = getTodayLocalISO();
   newCategoryName.value = "";
 };
 
@@ -43,6 +46,7 @@ const resetForm = () => {
 };
 
 const othersCategoryId = computed(() => {
+  // استخدام toLowerCase() لضمان المطابقة
   const othersCategory = transactionStore.categories.find(
     (c: Category) => c.name.toLowerCase() === "others"
   );
@@ -61,7 +65,6 @@ watch(
       amount.value = newVal.amount;
       type.value = newVal.type;
       categoryId.value = newVal.category_id;
-      // عند التعديل، نعرض التاريخ كما هو من قاعدة البيانات
       transactionDate.value = new Date(newVal.created_at)
         .toISOString()
         .split("T")[0];
@@ -78,7 +81,7 @@ watch(
 
 const handleSubmit = async () => {
   if (!description.value || !amount.value || amount.value <= 0) {
-    alert("Please fill in all fields correctly and ensure amount is positive.");
+    alert(t("required_field"));
     return;
   }
 
@@ -86,7 +89,7 @@ const handleSubmit = async () => {
 
   if (type.value === "expense" && showNewCategoryInput.value) {
     if (!newCategoryName.value.trim()) {
-      alert("Please enter a name for the new category.");
+      alert(t("required_field"));
       return;
     }
     const newCat = await transactionStore.addCategory(
@@ -95,23 +98,20 @@ const handleSubmit = async () => {
     if (newCat) {
       finalCategoryId = newCat.id;
     } else {
-      alert("Failed to create new category.");
+      alert(t("transaction_failed"));
       return;
     }
   }
 
   if (type.value === "expense" && !finalCategoryId) {
-    alert("Please select or create a category for the expense.");
+    alert(t("select_category"));
     return;
   }
   if (type.value === "expense" && !priority.value) {
-    alert("Please select a priority for the expense.");
+    alert(t("select_priority"));
     return;
   }
 
-  // --- **الإصلاح الرئيسي رقم 2: إرسال التاريخ والوقت الحاليين معًا** ---
-  // إذا كان التاريخ المحدد هو تاريخ اليوم، نستخدم الوقت الحالي الدقيق.
-  // إذا كان تاريخًا قديمًا، نستخدم بداية اليوم لتجنب مشاكل التوقيت.
   const isToday = transactionDate.value === getTodayLocalISO();
   const finalDate = isToday ? new Date() : new Date(transactionDate.value);
 
@@ -120,7 +120,7 @@ const handleSubmit = async () => {
     amount: amount.value,
     type: type.value,
     category_id: type.value === "expense" ? finalCategoryId : null,
-    created_at: finalDate.toISOString(), // نرسل التاريخ والوقت الكاملين
+    created_at: finalDate.toISOString(),
     priority: type.value === "expense" ? priority.value : null,
   };
 
@@ -138,23 +138,27 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <!-- ... باقي الكود في الـ template يبقى كما هو تمامًا ... -->
+  <!-- --- 2. إضافة dir للتحكم في الاتجاه --- -->
   <div
     class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
+    :dir="isRtl ? 'rtl' : 'ltr'"
   >
-    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">
-      {{ isEditing ? "Edit Transaction" : "Add New Transaction" }}
+    <h3
+      class="text-lg font-medium text-gray-900 dark:text-white mb-6 text-start"
+    >
+      {{ isEditing ? t("edit_transaction") : t("add_transaction") }}
     </h3>
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <div>
         <label
           for="type"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Type</label
+          >{{ t("type") }}</label
         >
-        <select v-model="type" id="type" class="mt-1 input-field">
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
+        <!-- --- 3. إضافة كلاس select-input --- -->
+        <select v-model="type" id="type" class="mt-1 input-field select-input">
+          <option value="expense">{{ t("expense") }}</option>
+          <option value="income">{{ t("income") }}</option>
         </select>
       </div>
 
@@ -162,7 +166,7 @@ const handleSubmit = async () => {
         <label
           for="description"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Description</label
+          >{{ t("description") }}</label
         >
         <input
           v-model="description"
@@ -170,7 +174,7 @@ const handleSubmit = async () => {
           type="text"
           required
           class="mt-1 input-field"
-          placeholder="e.g., Groceries"
+          :placeholder="t('description_placeholder')"
         />
       </div>
 
@@ -178,7 +182,7 @@ const handleSubmit = async () => {
         <label
           for="amount"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Amount</label
+          >{{ t("amount") }}</label
         >
         <input
           v-model.number="amount"
@@ -187,7 +191,7 @@ const handleSubmit = async () => {
           step="0.01"
           required
           class="mt-1 input-field"
-          placeholder="e.g., 75.50"
+          :placeholder="t('amount_placeholder')"
         />
       </div>
 
@@ -195,16 +199,22 @@ const handleSubmit = async () => {
         <label
           for="category"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Category</label
+          >{{ t("category") }}</label
         >
-        <select v-model="categoryId" id="category" class="mt-1 input-field">
-          <option :value="null" disabled>Select a category</option>
+        <!-- --- 3. إضافة كلاس select-input --- -->
+        <select
+          v-model="categoryId"
+          id="category"
+          class="mt-1 input-field select-input"
+        >
+          <option :value="null" disabled>{{ t("select_category") }}</option>
+          <!-- --- 4. ترجمة أسماء الفئات --- -->
           <option
             v-for="category in transactionStore.categories"
             :key="category.id"
             :value="category.id"
           >
-            {{ category.name }}
+            {{ t(category.name.toLowerCase()) }}
           </option>
         </select>
       </div>
@@ -213,14 +223,14 @@ const handleSubmit = async () => {
         <label
           for="new-category"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >New Category Name</label
+          >{{ t("new_category_name") }}</label
         >
         <input
           v-model="newCategoryName"
           id="new-category"
           type="text"
           class="mt-1 input-field"
-          placeholder="e.g., Personal Project"
+          :placeholder="t('new_category_placeholder')"
         />
       </div>
 
@@ -228,13 +238,18 @@ const handleSubmit = async () => {
         <label
           for="priority"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Priority</label
+          >{{ t("priority") }}</label
         >
-        <select v-model="priority" id="priority" class="mt-1 input-field">
-          <option :value="null" disabled>Select priority</option>
-          <option value="High">High (Necessary)</option>
-          <option value="Medium">Medium (Important)</option>
-          <option value="Low">Low (Unnecessary)</option>
+        <!-- --- 3. إضافة كلاس select-input --- -->
+        <select
+          v-model="priority"
+          id="priority"
+          class="mt-1 input-field select-input"
+        >
+          <option :value="null" disabled>{{ t("select_priority") }}</option>
+          <option value="High">{{ t("high") }}</option>
+          <option value="Medium">{{ t("medium") }}</option>
+          <option value="Low">{{ t("low") }}</option>
         </select>
       </div>
 
@@ -242,7 +257,7 @@ const handleSubmit = async () => {
         <label
           for="date"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
-          >Date</label
+          >{{ t("date") }}</label
         >
         <input
           v-model="transactionDate"
@@ -258,7 +273,7 @@ const handleSubmit = async () => {
           type="submit"
           class="flex-grow bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors"
         >
-          {{ isEditing ? "Update Transaction" : "Add Transaction" }}
+          {{ isEditing ? t("update") : t("add") }}
         </button>
         <button
           v-if="isEditing"
@@ -266,7 +281,7 @@ const handleSubmit = async () => {
           type="button"
           class="flex-grow bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors"
         >
-          Cancel
+          {{ t("cancel") }}
         </button>
       </div>
     </form>
@@ -275,6 +290,29 @@ const handleSubmit = async () => {
 
 <style scoped lang="postcss">
 .input-field {
-  @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
+  @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
+}
+
+.select-input {
+  @apply appearance-none bg-no-repeat;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-size: 1.5em 1.5em;
+}
+
+/* --- ✨ التعديل هنا ✨ --- */
+[dir="ltr"] .select-input {
+  background-position: right 0.5rem center; /* السهم على اليمين مع هامش */
+  @apply pr-10 pl-3;
+}
+
+[dir="rtl"] .select-input {
+  background-position: left 0.5rem center; /* السهم على اليسار مع هامش */
+  @apply pl-10 pr-3;
+}
+
+[dir="rtl"] .input-field,
+[dir="rtl"] label,
+[dir="rtl"] h3 {
+  @apply text-right;
 }
 </style>
