@@ -14,16 +14,43 @@ const transactionsToExport = computed(() => {
   return transactionStore.globallyFilteredTransactions;
 });
 
-const handleExportExcel = () => {
+// --- ✨ 1. تحويل الدالة إلى async ---
+const handleExportExcel = async () => {
   if (transactionsToExport.value.length === 0) {
     alert(t("no_data_to_export"));
     return;
   }
-  exportToExcel(
-    transactionsToExport.value,
-    transactionStore.categories,
-    "ProFinance_Report"
-  );
+
+  // --- ✨ 2. إعداد البيانات مع كائن التاريخ الكامل ---
+  const translatedData = transactionsToExport.value.map((transaction) => {
+    const category = transactionStore.categories.find(
+      (c) => c.id === transaction.category_id
+    );
+
+    return {
+      _fullDate: new Date(transaction.created_at), // <-- إرسال كائن التاريخ
+      [t("excel.header.date")]: "", // سيتم ملؤه لاحقاً في دالة التصدير
+      [t("excel.header.description")]: transaction.description,
+      [t("excel.header.type")]: t(`transaction.type.${transaction.type}`),
+      [t("excel.header.amount")]: transaction.amount.toFixed(2),
+      [t("excel.header.category")]: category
+        ? t(category.name.toLowerCase())
+        : t("n_a"),
+      [t("excel.header.priority")]: transaction.priority
+        ? t(`priority_levels.${transaction.priority.toLowerCase()}`)
+        : t("n_a"),
+    };
+  });
+
+  // --- ✨ 3. استخدام await عند استدعاء الدالة ---
+  try {
+    await exportToExcel(translatedData, t("excel.file_name"));
+  } catch (error) {
+    console.error("Excel export failed:", error);
+    alert(
+      "An error occurred during the Excel export. Please check the console."
+    );
+  }
 };
 
 const handleExportPDF = async () => {
@@ -35,11 +62,9 @@ const handleExportPDF = async () => {
   let categoryChartImage = "";
   let priorityChartImage = "";
 
-  // --- **الإصلاح هنا: استخدام try...catch لضمان عدم توقف الكود** ---
   try {
     const getChartAsBase64 = (chartId: string): string => {
       const chart = ChartJS.getChart(chartId);
-      // التأكد من وجود الرسم البياني قبل محاولة تحويله
       if (chart) {
         return chart.toBase64Image();
       }
@@ -51,7 +76,6 @@ const handleExportPDF = async () => {
     priorityChartImage = getChartAsBase64("priority-chart-canvas");
   } catch (error) {
     console.error("Failed to capture chart images:", error);
-    // نترك الصور فارغة ونكمل العملية بدلاً من إيقافها
   }
 
   const reportData = {
@@ -69,7 +93,6 @@ const handleExportPDF = async () => {
     priorityChartImage,
   };
 
-  // استدعاء دالة التصدير النهائية
   await exportToPDF(reportData);
 };
 </script>

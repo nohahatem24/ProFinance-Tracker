@@ -46,17 +46,15 @@
   "amount": "المبلغ",
   "amount_placeholder": "مثال: 75.50",
   "type": "النوع",
-  "income": "دخل",
-  "expense": "مصروف",
   "category": "الفئة",
   "select_category": "اختر فئة",
   "new_category_name": "اسم الفئة الجديدة",
   "new_category_placeholder": "مثال: مشروع شخصي",
   "priority": "الأولوية",
   "select_priority": "اختر أولوية",
-  "high": "عالية",
-  "medium": "متوسطة",
-  "low": "منخفضة",
+  "high": "عالية", 
+  "medium": "متوسطة", 
+  "low": "منخفضة", 
   "n_a": "غير متاح",
   "date": "التاريخ",
   "add": "إضافة معاملة",
@@ -94,5 +92,29 @@
   "entertainment": "ترفيه",
   "drinks": "مشروبات",
   "medicine": "أدوية",
-  "others": "أخرى"
+  "others": "أخرى",
+  "salary": "راتب",
+  "transaction": {
+    "type": {
+      "income": "دخل",
+      "expense": "مصروف"
+    }
+  },
+  "priority_levels": {
+    "high": "عالية",
+    "medium": "متوسطة",
+    "low": "منخفضة"
+  },
+  "excel": {
+    "sheet_name": "المعاملات",
+    "file_name": "تقرير_المعاملات",
+    "header": {
+      "date": "التاريخ",
+      "description": "الوصف",
+      "type": "النوع",
+      "amount": "المبلغ",
+      "category": "الفئة",
+      "priority": "الأولوية"
+    }
+  }
 }

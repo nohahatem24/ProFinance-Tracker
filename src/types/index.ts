@@ -15,5 +15,5 @@ export interface Transaction {
   user_id: string;
   // قد نضيف بيانات الفئة هنا لاحقًا
   categories?: Category | null;
-  priority: 'High' | 'Medium' | 'Low' | null;
+  priority: 'high' | 'medium' | 'low' | null;
 }

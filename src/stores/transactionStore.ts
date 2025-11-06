@@ -32,14 +32,20 @@ export const useTransactionStore = defineStore("transactions", () => {
     singleDate: "",
     type: null as "income" | "expense" | null,
     category: null as number | null,
-    priority: null as "High" | "Medium" | "Low" | null,
+    // ✨ تم التعديل هنا ليقبل الحروف الصغيرة
+    priority: null as "high" | "medium" | "low" | null,
   });
 
   const conversionRate = ref<number | null>(null);
   const targetCurrency = ref<string | null>(null);
 
   const resetLocalFilters = () => {
-    localFilters.value = { singleDate: "", type: null, category: null, priority: null };
+    localFilters.value = {
+      singleDate: "",
+      type: null,
+      category: null,
+      priority: null,
+    };
   };
 
   const resetAllFilters = () => {
@@ -54,8 +60,8 @@ export const useTransactionStore = defineStore("transactions", () => {
 
   const globallyFilteredTransactions = computed(() => {
     const { startDate, endDate } = globalFilters.value;
-    if (!startDate || !endDate) return allTransactions.value; // **إصلاح مهم: أرجع كل المعاملات إذا لم تكن هناك فلاتر تاريخ**
-    
+    if (!startDate || !endDate) return allTransactions.value;
+
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
     const end = new Date(endDate);
@@ -110,16 +116,26 @@ export const useTransactionStore = defineStore("transactions", () => {
     else categories.value = data || [];
   };
 
-  const addTransaction = async (transaction: Omit<Transaction, "id" | "user_id">) => {
+  const addTransaction = async (
+    transaction: Omit<Transaction, "id" | "user_id">
+  ) => {
     const authStore = useAuthStore();
     if (!authStore.user) return;
-    const { error } = await supabase.from("transactions").insert([{ ...transaction, user_id: authStore.user.id }]);
+    const { error } = await supabase
+      .from("transactions")
+      .insert([{ ...transaction, user_id: authStore.user.id }]);
     if (error) console.error("Error adding transaction:", error);
     else await fetchTransactions();
   };
 
-  const updateTransaction = async (id: number, updates: Partial<Omit<Transaction, "id" | "user_id">>) => {
-    const { error } = await supabase.from("transactions").update(updates).eq("id", id);
+  const updateTransaction = async (
+    id: number,
+    updates: Partial<Omit<Transaction, "id" | "user_id">>
+  ) => {
+    const { error } = await supabase
+      .from("transactions")
+      .update(updates)
+      .eq("id", id);
     if (error) console.error("Error updating transaction:", error);
     else await fetchTransactions();
   };
@@ -127,15 +143,23 @@ export const useTransactionStore = defineStore("transactions", () => {
   const deleteTransaction = async (id: number) => {
     const { error } = await supabase.from("transactions").delete().eq("id", id);
     if (error) console.error("Error deleting transaction:", error);
-    else allTransactions.value = allTransactions.value.filter((t) => t.id !== id);
+    else
+      allTransactions.value = allTransactions.value.filter((t) => t.id !== id);
   };
 
   const addCategory = async (name: string): Promise<Category | null> => {
     const authStore = useAuthStore();
     if (!authStore.user) return null;
-    const existingCategory = categories.value.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    const existingCategory = categories.value.find(
+      (c) => c.name.toLowerCase() === name.toLowerCase()
+    );
     if (existingCategory) return existingCategory;
-    const { data, error } = await supabase.from("categories").insert([{ name, user_id: authStore.user.id }]).select().single();
+    // ✨ تعديل: تمت إزالة user_id من كائن الإدراج
+    const { data, error } = await supabase
+      .from("categories")
+      .insert([{ name }]) // <-- تم إرسال الاسم فقط
+      .select()
+      .single();
     if (error) {
       console.error("Error adding category:", error);
       return null;
@@ -148,10 +172,26 @@ export const useTransactionStore = defineStore("transactions", () => {
   };
 
   return {
-    allTransactions, categories, loading, globalFilters, localFilters,
-    conversionRate, targetCurrency, resetLocalFilters, resetAllFilters,
-    resetConversion, globallyFilteredTransactions, totalIncome, totalExpenses,
-    balance, convertAmount, fetchTransactions, fetchCategories, addTransaction,
-    updateTransaction, deleteTransaction, addCategory,
+    allTransactions,
+    categories,
+    loading,
+    globalFilters,
+    localFilters,
+    conversionRate,
+    targetCurrency,
+    resetLocalFilters,
+    resetAllFilters,
+    resetConversion,
+    globallyFilteredTransactions,
+    totalIncome,
+    totalExpenses,
+    balance,
+    convertAmount,
+    fetchTransactions,
+    fetchCategories,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addCategory,
   };
 });

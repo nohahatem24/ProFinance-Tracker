@@ -95,7 +95,7 @@ const handleRegister = async () => {
             <button
               type="button"
               @click="showPassword = !showPassword"
-              class="absolute inset-y-0 right-0 flex items-center rtl:left-0 rtl:right-auto ltr:pr-3 rtl:pl-3"
+              class="absolute inset-y-0 right-2 flex items-center rtl:left-0 rtl:right-auto ltr:pr-3 rtl:pl-3"
             >
               <EyeIcon v-if="!showPassword" class="h-5 w-5 text-gray-400" />
               <EyeSlashIcon v-else class="h-5 w-5 text-gray-400" />

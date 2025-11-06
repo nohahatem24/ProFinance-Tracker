@@ -11,7 +11,7 @@ const { t, locale } = useI18n();
 const transactionStore = useTransactionStore();
 const currencyStore = useCurrencyStore();
 
-const rtlLocales = ["ar", "he", "fa", "ur"];
+const rtlLocales = ["ar", "he", "fa", "ur", "ps", "yi", "sd"];
 const isRtl = computed(() => rtlLocales.includes(locale.value));
 
 const emit = defineEmits<{
@@ -63,23 +63,24 @@ const formatDateTime = (dateString: string) => {
 const getCategoryName = (id: number | null) => {
   if (!id) return t("n_a");
   const category = transactionStore.categories.find((c) => c.id === id);
+  // نفترض أن category.name هو مفتاح ترجمة (e.g., 'shopping')
   return category ? t(category.name.toLowerCase()) : t("n_a");
 };
 
 const getPriorityColor = (priority: string | null) => {
-  switch (priority) {
-    case "Low":
+  // نستخدم حروف صغيرة للمقارنة
+  switch (priority?.toLowerCase()) {
+    case "low":
       return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-    case "Medium":
+    case "medium":
       return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-    case "High":
+    case "high":
       return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
     default:
       return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
   }
 };
 
-// --- الدالة الجديدة ---
 const getTypeColorClass = (type: string) => {
   if (type === "income") {
     return "text-green-600 dark:text-green-400";
@@ -95,15 +96,16 @@ const getTypeColorClass = (type: string) => {
     class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
     :dir="isRtl ? 'rtl' : 'ltr'"
   >
-    <!-- ... باقي الفلاتر ... -->
     <h3
       class="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-start"
     >
       {{ t("transaction_history") }}
     </h3>
+    <!-- Filters Section -->
     <div
       class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4"
     >
+      <!-- Date Filter -->
       <div>
         <label
           for="single-date"
@@ -117,6 +119,7 @@ const getTypeColorClass = (type: string) => {
           class="mt-1 filter-input"
         />
       </div>
+      <!-- Type Filter -->
       <div>
         <label
           for="type-filter"
@@ -129,10 +132,12 @@ const getTypeColorClass = (type: string) => {
           class="mt-1 filter-input select-input"
         >
           <option :value="null">{{ t("all_types") }}</option>
-          <option value="income">{{ t("income") }}</option>
-          <option value="expense">{{ t("expense") }}</option>
+          <!-- ✨ تعديل: استخدام المفتاح المتداخل للترجمة -->
+          <option value="income">{{ t("transaction.type.income") }}</option>
+          <option value="expense">{{ t("transaction.type.expense") }}</option>
         </select>
       </div>
+      <!-- Category Filter -->
       <div>
         <label
           for="category-filter"
@@ -154,6 +159,7 @@ const getTypeColorClass = (type: string) => {
           </option>
         </select>
       </div>
+      <!-- Priority Filter -->
       <div>
         <label
           for="priority-filter"
@@ -166,11 +172,13 @@ const getTypeColorClass = (type: string) => {
           class="mt-1 filter-input select-input"
         >
           <option :value="null">{{ t("all_priorities") }}</option>
-          <option value="High">{{ t("high") }}</option>
-          <option value="Medium">{{ t("medium") }}</option>
-          <option value="Low">{{ t("low") }}</option>
+          <!-- ✨ تعديل: استخدام حروف صغيرة للقيم لتتوافق مع الـ store -->
+          <option value="high">{{ t("priority_levels.high") }}</option>
+          <option value="medium">{{ t("priority_levels.medium") }}</option>
+          <option value="low">{{ t("priority_levels.low") }}</option>
         </select>
       </div>
+      <!-- Reset Button -->
       <div class="flex items-end">
         <button
           @click="transactionStore.resetLocalFilters"
@@ -180,7 +188,11 @@ const getTypeColorClass = (type: string) => {
         </button>
       </div>
     </div>
+
+    <!-- Export Options -->
     <div class="my-6"><ExportOptions /></div>
+
+    <!-- Transactions Table -->
     <div class="overflow-x-auto max-h-96">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-indigo-50 dark:bg-gray-700 sticky top-0">
@@ -229,14 +241,13 @@ const getTypeColorClass = (type: string) => {
               </div>
             </td>
             <td class="table-cell">{{ transaction.description }}</td>
-            <!-- **التعديل الجديد هنا** -->
+            <!-- ✨ تعديل: استخدام المفتاح المتداخل للترجمة -->
             <td
               class="table-cell font-medium"
               :class="getTypeColorClass(transaction.type)"
             >
-              {{ t(transaction.type) }}
+              {{ t(`transaction.type.${transaction.type}`) }}
             </td>
-            <!-- **التعديل الجديد هنا** -->
             <td
               class="table-cell font-medium"
               :class="getTypeColorClass(transaction.type)"
@@ -253,12 +264,14 @@ const getTypeColorClass = (type: string) => {
               <span
                 :class="getPriorityColor(transaction.priority)"
                 class="priority-badge"
-                >{{
-                  transaction.priority
-                    ? t(transaction.priority.toLowerCase())
-                    : t("n_a")
-                }}</span
               >
+                <!-- ✨ تعديل: استخدام المفتاح المتداخل للترجمة -->
+                {{
+                  transaction.priority
+                    ? t(`priority_levels.${transaction.priority.toLowerCase()}`)
+                    : t("n_a")
+                }}
+              </span>
             </td>
             <td class="table-cell">
               <div class="flex items-center justify-center space-x-2">
@@ -284,26 +297,23 @@ const getTypeColorClass = (type: string) => {
 </template>
 
 <style scoped lang="postcss">
+/* ... الأنماط تبقى كما هي ... */
 .filter-input {
   @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
 }
-
 .select-input {
   @apply appearance-none bg-no-repeat;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-size: 1.5em 1.5em;
 }
-
 [dir="ltr"] .select-input {
   background-position: right 0.5rem center;
   @apply pr-10 pl-3;
 }
-
 [dir="rtl"] .select-input {
   background-position: left 0.5rem center;
   @apply pl-10 pr-3;
 }
-
 .table-header {
   @apply px-4 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider;
 }
@@ -313,14 +323,12 @@ const getTypeColorClass = (type: string) => {
 .priority-badge {
   @apply px-2 inline-flex text-xs leading-5 font-semibold rounded-full;
 }
-
 [dir="rtl"] .table-header,
 [dir="rtl"] .table-cell,
 [dir="rtl"] h3,
 [dir="rtl"] label {
   @apply text-right;
 }
-
 [dir="rtl"] .flex.space-x-2 {
   @apply space-x-reverse;
 }

@@ -46,16 +46,14 @@
   "amount": "Amount",
   "amount_placeholder": "e.g., 75.50",
   "type": "Type",
-  "income": "Income",
-  "expense": "Expense",
   "category": "Category",
   "select_category": "Select a category",
   "new_category_name": "New Category Name",
   "new_category_placeholder": "e.g., Personal Project",
   "priority": "Priority",
   "select_priority": "Select a priority",
-  "high": "High",
-  "medium": "Medium",
+  "high": "High", 
+  "medium": "Medium", 
   "low": "Low",
   "n_a": "N/A",
   "date": "Date",
@@ -94,5 +92,29 @@
   "entertainment": "Entertainment",
   "drinks": "Drinks",
   "medicine": "Medicine",
-  "others": "Others"
+  "others": "Others",
+  "salary": "Salary",
+  "transaction": {
+    "type": {
+      "income": "Income",
+      "expense": "Expense"
+    }
+  },
+  "priority_levels": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "excel": {
+    "sheet_name": "Transactions",
+    "file_name": "Transaction_Report",
+    "header": {
+      "date": "Date",
+      "description": "Description",
+      "type": "Type",
+      "amount": "Amount",
+      "category": "Category",
+      "priority": "Priority"
+    }
+  }
 }

@@ -4,9 +4,9 @@ import { useTransactionStore } from "../stores/transactionStore";
 import type { Transaction, Category } from "../types";
 import { useI18n } from "vue-i18n";
 
-// --- 1. إضافة locale و isRtl ---
+// --- 1. إعدادات الترجمة والاتجاه ---
 const { t, locale } = useI18n();
-const rtlLocales = ["ar", "he", "fa", "ur"];
+const rtlLocales = ["ar", "he", "fa", "ur", "ps", "yi", "sd"];
 const isRtl = computed(() => rtlLocales.includes(locale.value));
 
 const props = defineProps<{
@@ -16,6 +16,7 @@ const emit = defineEmits(["clear-edit"]);
 
 const transactionStore = useTransactionStore();
 
+// --- 2. تعريف الحقول باستخدام ref ---
 const getTodayLocalISO = () => {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -27,9 +28,11 @@ const amount = ref<number | null>(null);
 const type = ref<"income" | "expense">("expense");
 const categoryId = ref<number | null>(null);
 const transactionDate = ref(getTodayLocalISO());
-const priority = ref<"High" | "Medium" | "Low" | null>(null);
+// ✨ تعديل: استخدام حروف صغيرة لتتوافق مع قيم <option> ومفاتيح الترجمة
+const priority = ref<"high" | "medium" | "low" | null>(null);
 const newCategoryName = ref("");
 
+// --- 3. دوال مساعدة لإدارة الفورم ---
 const resetFormFields = () => {
   description.value = "";
   amount.value = null;
@@ -45,18 +48,23 @@ const resetForm = () => {
   emit("clear-edit");
 };
 
+// --- 4. Computed Properties ---
 const othersCategoryId = computed(() => {
-  // استخدام toLowerCase() لضمان المطابقة
+  // ✨ تعديل: البحث باستخدام مفتاح الترجمة لضمان الموثوقية
+  const othersKey = "others";
   const othersCategory = transactionStore.categories.find(
-    (c: Category) => c.name.toLowerCase() === "others"
+    (c: Category) => c.name.toLowerCase() === othersKey
   );
   return othersCategory ? othersCategory.id : null;
 });
+
 const showNewCategoryInput = computed(
   () => categoryId.value === othersCategoryId.value
 );
+
 const isEditing = computed(() => !!props.transactionToEdit);
 
+// --- 5. مراقبة التغييرات لملء الفورم عند التعديل ---
 watch(
   () => props.transactionToEdit,
   (newVal) => {
@@ -68,9 +76,13 @@ watch(
       transactionDate.value = new Date(newVal.created_at)
         .toISOString()
         .split("T")[0];
-      priority.value = newVal.priority || null;
+      // ✨ تعديل: التأكد من أن القيمة المحفوظة تتحول إلى حروف صغيرة
+      priority.value = newVal.priority
+        ? (newVal.priority.toLowerCase() as "high" | "medium" | "low")
+        : null;
       newCategoryName.value = "";
     } else {
+      // لا تقم بإعادة تعيين الفورم إذا كان المستخدم لا يزال في وضع التعديل
       if (!isEditing.value) {
         resetFormFields();
       }
@@ -79,6 +91,7 @@ watch(
   { immediate: true }
 );
 
+// --- 6. دالة إرسال الفورم ---
 const handleSubmit = async () => {
   if (!description.value || !amount.value || amount.value <= 0) {
     alert(t("required_field"));
@@ -87,14 +100,18 @@ const handleSubmit = async () => {
 
   let finalCategoryId = categoryId.value;
 
+  // التعامل مع إضافة فئة جديدة
   if (type.value === "expense" && showNewCategoryInput.value) {
     if (!newCategoryName.value.trim()) {
       alert(t("required_field"));
       return;
     }
-    const newCat = await transactionStore.addCategory(
-      newCategoryName.value.trim()
-    );
+    // يجب حفظ الفئة الجديدة كمفتاح (حروف صغيرة)
+    const newCatKey = newCategoryName.value
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+    const newCat = await transactionStore.addCategory(newCatKey);
     if (newCat) {
       finalCategoryId = newCat.id;
     } else {
@@ -103,6 +120,7 @@ const handleSubmit = async () => {
     }
   }
 
+  // التحقق من الحقول المطلوبة للمصروفات
   if (type.value === "expense" && !finalCategoryId) {
     alert(t("select_category"));
     return;
@@ -121,6 +139,7 @@ const handleSubmit = async () => {
     type: type.value,
     category_id: type.value === "expense" ? finalCategoryId : null,
     created_at: finalDate.toISOString(),
+    // ✨ تعديل: إرسال القيمة بالحروف الصغيرة كما هي
     priority: type.value === "expense" ? priority.value : null,
   };
 
@@ -138,7 +157,6 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <!-- --- 2. إضافة dir للتحكم في الاتجاه --- -->
   <div
     class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-colors duration-300"
     :dir="isRtl ? 'rtl' : 'ltr'"
@@ -149,19 +167,20 @@ const handleSubmit = async () => {
       {{ isEditing ? t("edit_transaction") : t("add_transaction") }}
     </h3>
     <form @submit.prevent="handleSubmit" class="space-y-4">
+      <!-- Type -->
       <div>
         <label
           for="type"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
           >{{ t("type") }}</label
         >
-        <!-- --- 3. إضافة كلاس select-input --- -->
         <select v-model="type" id="type" class="mt-1 input-field select-input">
-          <option value="expense">{{ t("expense") }}</option>
-          <option value="income">{{ t("income") }}</option>
+          <option value="expense">{{ t("transaction.type.expense") }}</option>
+          <option value="income">{{ t("transaction.type.income") }}</option>
         </select>
       </div>
 
+      <!-- Description -->
       <div>
         <label
           for="description"
@@ -178,6 +197,7 @@ const handleSubmit = async () => {
         />
       </div>
 
+      <!-- Amount -->
       <div>
         <label
           for="amount"
@@ -195,20 +215,19 @@ const handleSubmit = async () => {
         />
       </div>
 
+      <!-- Category (for expenses) -->
       <div v-if="type === 'expense'">
         <label
           for="category"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
           >{{ t("category") }}</label
         >
-        <!-- --- 3. إضافة كلاس select-input --- -->
         <select
           v-model="categoryId"
           id="category"
           class="mt-1 input-field select-input"
         >
           <option :value="null" disabled>{{ t("select_category") }}</option>
-          <!-- --- 4. ترجمة أسماء الفئات --- -->
           <option
             v-for="category in transactionStore.categories"
             :key="category.id"
@@ -219,6 +238,7 @@ const handleSubmit = async () => {
         </select>
       </div>
 
+      <!-- New Category Input -->
       <div v-if="type === 'expense' && showNewCategoryInput">
         <label
           for="new-category"
@@ -234,25 +254,28 @@ const handleSubmit = async () => {
         />
       </div>
 
+      <!-- Priority (for expenses) -->
       <div v-if="type === 'expense'">
+        <!-- ✨ تعديل: استخدام t() لترجمة الـ label -->
         <label
           for="priority"
           class="block text-sm font-medium text-gray-600 dark:text-gray-300"
           >{{ t("priority") }}</label
         >
-        <!-- --- 3. إضافة كلاس select-input --- -->
         <select
           v-model="priority"
           id="priority"
           class="mt-1 input-field select-input"
         >
           <option :value="null" disabled>{{ t("select_priority") }}</option>
-          <option value="High">{{ t("high") }}</option>
-          <option value="Medium">{{ t("medium") }}</option>
-          <option value="Low">{{ t("low") }}</option>
+          <!-- ✨ تعديل: استخدام حروف صغيرة للقيم لتتوافق مع مفاتيح الترجمة -->
+          <option value="high">{{ t("priority_levels.high") }}</option>
+          <option value="medium">{{ t("priority_levels.medium") }}</option>
+          <option value="low">{{ t("priority_levels.low") }}</option>
         </select>
       </div>
 
+      <!-- Date -->
       <div>
         <label
           for="date"
@@ -268,6 +291,7 @@ const handleSubmit = async () => {
         />
       </div>
 
+      <!-- Action Buttons -->
       <div class="flex gap-4 pt-2">
         <button
           type="submit"
@@ -299,14 +323,13 @@ const handleSubmit = async () => {
   background-size: 1.5em 1.5em;
 }
 
-/* --- ✨ التعديل هنا ✨ --- */
 [dir="ltr"] .select-input {
-  background-position: right 0.5rem center; /* السهم على اليمين مع هامش */
+  background-position: right 0.5rem center;
   @apply pr-10 pl-3;
 }
 
 [dir="rtl"] .select-input {
-  background-position: left 0.5rem center; /* السهم على اليسار مع هامش */
+  background-position: left 0.5rem center;
   @apply pl-10 pr-3;
 }
 
