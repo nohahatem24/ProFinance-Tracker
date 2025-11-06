@@ -1,0 +1,21 @@
+{
+  "name": "ProFinance Tracker",
+  "short_name": "ProFinance",
+  "description": "Take control of your finances. Track, analyze, and grow.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/squarelogo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/squarelogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
