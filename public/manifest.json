@@ -1,6 +1,6 @@
 {
   "name": "ProFinance Tracker",
-  "short_name": "ProFinance",
+  "short_name": "ProFinance Tracker",
   "description": "Take control of your finances. Track, analyze, and grow.",
   "start_url": "/",
   "display": "standalone",
