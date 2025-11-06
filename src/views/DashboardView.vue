@@ -145,7 +145,9 @@ onMounted(() => {
               >
                 {{
                   t("target_currency_rate", {
-                    targetCurrency: transactionStore.targetCurrency || "Target",
+                    // ✨ تعديل: نستخدم t('target') كقيمة احتياطية
+                    targetCurrency:
+                      transactionStore.targetCurrency || t("target"),
                   })
                 }}
               </label>

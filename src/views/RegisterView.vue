@@ -3,9 +3,13 @@ import { ref } from "vue";
 import { useAuthStore } from "../stores/authStore";
 import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
-import { useI18n } from "vue-i18n"; // **جديد**
+import { useI18n } from "vue-i18n";
+import { computed } from "vue";
 
-const { t } = useI18n(); // **جديد**
+import lightLogo from "../assets/Plightmodelogo.png";
+import darkLogo from "../assets/Pnightmodelogo.png";
+
+const { t, locale } = useI18n();
 const authStore = useAuthStore();
 const router = useRouter();
 
@@ -13,6 +17,9 @@ const email = ref("");
 const password = ref("");
 const errorMessage = ref<string | null>(null);
 const showPassword = ref(false);
+
+const rtlLocales = ["ar", "he", "fa", "ur"];
+const isRtl = computed(() => rtlLocales.includes(locale.value));
 
 const handleRegister = async () => {
   errorMessage.value = null;
@@ -31,89 +38,88 @@ const handleRegister = async () => {
 </script>
 
 <template>
-  <div
-    class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-300"
-  >
-    <!-- Left Pane (Branding) -->
-    <div
-      class="hidden lg:flex w-1/2 items-center justify-center bg-gray-800 p-12 text-white relative"
-    >
-      <div class="text-center">
-        <h1 class="text-5xl font-bold tracking-tight mb-6">
-          {{ t("app_name") }}
-        </h1>
-        <p class="mt-4 text-lg text-gray-300">{{ t("app_subtitle") }}</p>
-      </div>
-    </div>
-
-    <!-- Right Pane (Form) -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
-      <div class="w-full max-w-md">
-        <div class="lg:hidden text-center mb-8">
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            {{ t("app_name") }}
-          </h1>
+  <div class="min-h-screen bg-white">
+    <div class="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+      <!-- ✨ تعديل: القسم الداكن أصبح الآن هو الأول في الكود -->
+      <div
+        class="hidden lg:flex flex-col justify-center items-center bg-gray-800 text-white p-12"
+      >
+        <div class="text-center">
+          <img
+            :src="darkLogo"
+            alt="Dark Logo"
+            class="h-auto w-80 mx-auto mb-10"
+          />
+          <p class="mt-4 text-xl font-medium text-gray-300">
+            {{ t("app_subtitle") }}
+          </p>
         </div>
+      </div>
 
-        <h2
-          class="text-3xl font-bold text-gray-900 dark:text-white text-center"
-        >
-          {{ t("create_your_account") }}
-        </h2>
-        <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          {{ t("or") }}
-          <RouterLink
-            to="/login"
-            class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
-          >
-            {{ t("log_in_to_existing_account") }}
-          </RouterLink>
-        </p>
-
-        <form @submit.prevent="handleRegister" class="mt-8 space-y-6">
-          <div>
-            <label for="email" class="sr-only">{{ t("email") }}</label>
-            <input
-              v-model="email"
-              id="email"
-              type="email"
-              required
-              class="auth-input"
-              :placeholder="t('email')"
-            />
+      <!-- القسم الثاني: الفورم -->
+      <!-- ✨ تعديل: تم حذف كلاس الترتيب لأنه لم يعد ضرورياً -->
+      <div
+        class="flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12"
+      >
+        <div class="w-full max-w-md">
+          <div class="lg:hidden mb-8 text-center">
+            <img :src="lightLogo" alt="Logo" class="h-30 w-60 mx-auto mb-20" />
           </div>
-          <div class="relative">
-            <label for="password" class="sr-only">{{ t("password") }}</label>
-            <input
-              v-model="password"
-              id="password"
-              :type="showPassword ? 'text' : 'password'"
-              required
-              class="auth-input"
-              :placeholder="t('password')"
-            />
-            <button
-              type="button"
-              @click="showPassword = !showPassword"
-              class="absolute inset-y-0 right-2 flex items-center rtl:left-0 rtl:right-auto ltr:pr-3 rtl:pl-3"
+
+          <h2 class="text-3xl font-bold text-gray-900 text-center">
+            {{ t("create_your_account") }}
+          </h2>
+          <p class="mt-2 text-center text-sm text-gray-600">
+            {{ t("or") }}
+            <RouterLink
+              to="/login"
+              class="font-medium text-indigo-600 hover:underline"
             >
-              <EyeIcon v-if="!showPassword" class="h-5 w-5 text-gray-400" />
-              <EyeSlashIcon v-else class="h-5 w-5 text-gray-400" />
-            </button>
-          </div>
+              {{ t("log_in_to_existing_account") }}
+            </RouterLink>
+          </p>
 
-          <div v-if="errorMessage" class="rounded-md bg-red-500/10 p-3">
-            <p class="text-sm text-red-500 dark:text-red-400">
-              {{ errorMessage }}
-            </p>
-          </div>
-
-          <div>
-            <button type="submit" class="auth-button">
-              {{ t("sign_up") }}
-            </button>
-          </div>
-        </form>
+          <form @submit.prevent="handleRegister" class="mt-8 space-y-6">
+            <div>
+              <label for="email" class="sr-only">{{ t("email") }}</label>
+              <input
+                v-model="email"
+                id="email"
+                type="email"
+                required
+                class="auth-input"
+                :placeholder="t('email')"
+              />
+            </div>
+            <div class="relative">
+              <label for="password" class="sr-only">{{ t("password") }}</label>
+              <input
+                v-model="password"
+                id="password"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                class="auth-input"
+                :placeholder="t('password')"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute inset-y-0 right-2 flex items-center rtl:left-0 rtl:right-auto ltr:pr-3 rtl:pl-3"
+              >
+                <EyeIcon v-if="!showPassword" class="h-5 w-5 text-gray-400" />
+                <EyeSlashIcon v-else class="h-5 w-5 text-gray-400" />
+              </button>
+            </div>
+            <div v-if="errorMessage" class="rounded-md bg-red-500/10 p-3">
+              <p class="text-sm text-red-500">{{ errorMessage }}</p>
+            </div>
+            <div>
+              <button type="submit" class="auth-button">
+                {{ t("sign_up") }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -121,7 +127,7 @@ const handleRegister = async () => {
 
 <style scoped lang="postcss">
 .auth-input {
-  @apply block w-full px-4 py-3 rounded-md border-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
+  @apply block w-full px-4 py-3 rounded-md border-0 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
 }
 .auth-button {
   @apply w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105;
