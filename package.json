@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build": "node scripts/translate.mjs && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.ts,.cjs --fix",
     "format": "prettier --write \"src/**/*.{vue,ts,css,json}\""
