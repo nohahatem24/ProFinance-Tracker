@@ -22,17 +22,13 @@ const supportedLanguages = [
   { code: "tr", name: "Türkçe" }, // Turkish
   { code: "zh", name: "中文" }, // Chinese
   { code: "hi", name: "हिन्दी" }, // Hindi
-
   { code: "bn", name: "বাংলা" }, // Bengali
   { code: "pt", name: "Português" }, // Portuguese
   { code: "ru", name: "Русский" }, // Russian
   { code: "ja", name: "日本語" }, // Japanese
-
   { code: "jv", name: "Basa Jawa" }, // Javanese
-
   { code: "vi", name: "Tiếng Việt" }, // Vietnamese
   { code: "th", name: "ไทย" }, // Thai
-
   { code: "id", name: "Bahasa Indonesia" }, // Indonesian
   { code: "sv", name: "Svenska" }, // Swedish
   { code: "uk", name: "Українська" }, // Ukrainian
@@ -43,7 +39,7 @@ const supportedLanguages = [
   { code: "fi", name: "Suomi" }, // Finnish
   { code: "da", name: "Dansk" }, // Danish
   { code: "no", name: "Norsk" }, // Norwegian (Bokmål)
-  { code: "nn", name: "Nynorsk" }, // Norwegian Nynorsk
+  // { code: "nn", name: "Nynorsk" }, // Norwegian Nynorsk - REMOVED
   { code: "ms", name: "Bahasa Melayu" }, // Malay
   { code: "sr", name: "Српски" }, // Serbian
   { code: "hr", name: "Hrvatski" }, // Croatian
@@ -69,7 +65,7 @@ const supportedLanguages = [
   { code: "yo", name: "Yorùbá" }, // Yoruba
   { code: "ig", name: "Igbo" }, // Igbo
   { code: "lb", name: "Lëtzebuergesch" }, // Luxembourgish
-  { code: "fo", name: "Føroyskt" }, // Faroese
+  // { code: "fo", name: "Føroyskt" }, // Faroese - REMOVED
   { code: "sq", name: "Shqip" }, // Albanian
   { code: "hy", name: "Հայերեն" }, // Armenian
   { code: "az", name: "Azərbaycanca" }, // Azerbaijani
@@ -83,13 +79,12 @@ const supportedLanguages = [
   { code: "kn", name: "ಕನ್ನಡ" }, // Kannada
   { code: "ml", name: "മലയാളം" }, // Malayalam
   { code: "pa", name: "ਪੰਜਾਬੀ" }, // Punjabi
-  { code_name: "gu", name: "ગુજરાતી" }, // Gujarati
+  { code: "gu", name: "ગુજરાતી" }, // Gujarati
   { code: "or", name: "ଓଡ଼ିଆ" }, // Odia
   { code: "as", name: "অসমীয়া" }, // Assamese
   { code: "mr", name: "मराठी" }, // Marathi
 
   // RTL Languages
-
   { code: "fa", name: "فارسی" }, // Persian
   { code: "he", name: "עברית" }, // Hebrew
   { code: "ur", name: "اردو" }, // Urdu

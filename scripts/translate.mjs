@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const SOURCE_LANG = "en";
+// ✨ المصفوفة الجديدة والآمنة ✨
 const TARGET_LANGS = [
   "ar",
   "fr",
@@ -33,7 +34,6 @@ const TARGET_LANGS = [
   "fi",
   "da",
   "no",
-  "nn",
   "ms",
   "sr",
   "hr",
@@ -59,7 +59,6 @@ const TARGET_LANGS = [
   "yo",
   "ig",
   "lb",
-  "fo",
   "sq",
   "hy",
   "az",
@@ -87,6 +86,7 @@ const TARGET_LANGS = [
   "yi",
   "dv",
 ];
+
 const LOCALES_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../src/locales"
