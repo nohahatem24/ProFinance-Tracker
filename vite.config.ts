@@ -13,6 +13,7 @@ export default defineConfig({
       workbox: {
         // 3. تحديد الملفات التي يجب تخزينها للعمل offline
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
       },
       // 4. استخدام نفس إعدادات ملف manifest.json
       manifest: {
@@ -47,7 +48,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      // ... (إذا كان لديك أي aliases، تبقى كما هي)
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
 });
