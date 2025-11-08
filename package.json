@@ -10,6 +10,9 @@
     "lint": "eslint . --ext .vue,.js,.ts,.cjs --fix",
     "format": "prettier --write \"src/**/*.{vue,ts,css,json}\""
   },
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
