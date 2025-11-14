@@ -3,8 +3,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// --- الإعدادات ---
 const SOURCE_LANG = "en";
-// ✨ المصفوفة الجديدة والآمنة ✨
 const TARGET_LANGS = [
   "ar",
   "fr",
@@ -86,40 +86,64 @@ const TARGET_LANGS = [
   "yi",
   "dv",
 ];
-
 const LOCALES_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../src/locales"
 );
 const SOURCE_FILE = path.join(LOCALES_DIR, `${SOURCE_LANG}.json`);
+const RETRY_COUNT = 3; // عدد محاولات الإعادة
+const RETRY_DELAY = 1000; // التأخير بين المحاولات بالمللي ثانية
 
+// --- دالة التأخير ---
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// --- دالة الترجمة مع إعادة المحاولة ---
 async function translateText(text, targetLang) {
   if (!text || typeof text !== "string") return text;
-  // ✨ تعديل: إضافة User-Agent لتجنب الحظر
   const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${SOURCE_LANG}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
   const headers = {
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
   };
 
-  const response = await fetch(url, { headers });
-  if (!response.ok) {
-    // ✨ تعديل: إلقاء خطأ صريح
-    throw new Error(
-      `API request failed with status ${response.status} for lang ${targetLang}`
-    );
+  for (let i = 0; i < RETRY_COUNT; i++) {
+    try {
+      const response = await fetch(url, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        if (!data || !data[0])
+          throw new Error(`Invalid API response for lang ${targetLang}`);
+        return data[0].map((item) => item[0]).join("");
+      }
+      // إذا كان الخطأ يمكن إعادة المحاولة فيه (مثل خطأ سيرفر أو ضغط)
+      if (response.status === 429 || response.status >= 500) {
+        console.warn(
+          `  ⚠️ Retrying for ${targetLang} (attempt ${i + 1}/${RETRY_COUNT}) due to status ${response.status}`
+        );
+        await delay(RETRY_DELAY * (i + 1)); // زيادة التأخير مع كل محاولة
+        continue;
+      }
+      // إذا كان الخطأ لا يمكن إصلاحه (مثل 400 Bad Request)، لا تعيد المحاولة
+      throw new Error(
+        `API request failed with status ${response.status} for lang ${targetLang}`
+      );
+    } catch (error) {
+      if (i === RETRY_COUNT - 1) {
+        // إذا كانت هذه آخر محاولة
+        throw error; // إلقاء الخطأ النهائي
+      }
+    }
   }
-  const data = await response.json();
-  if (!data || !data[0]) {
-    throw new Error(`Invalid API response for lang ${targetLang}`);
-  }
-  return data[0].map((item) => item[0]).join("");
+  // لن يصل الكود إلى هنا إلا إذا فشلت كل المحاولات
+  throw new Error(`All retries failed for lang ${targetLang}`);
 }
 
+// --- الدالة الرئيسية ---
 async function run() {
   console.log("🚀 Starting pre-build translation script...");
   if (!fs.existsSync(SOURCE_FILE)) {
-    throw new Error(`Source language file not found: ${SOURCE_FILE}`);
+    console.error(`Source language file not found: ${SOURCE_FILE}`);
+    process.exit(1);
   }
 
   const sourceMessages = JSON.parse(fs.readFileSync(SOURCE_FILE, "utf-8"));
@@ -138,8 +162,8 @@ async function run() {
     const newMessages = {};
 
     try {
-      await Promise.all(
-        Object.entries(sourceMessages).map(async ([key, value]) => {
+      const translationPromises = Object.entries(sourceMessages).map(
+        async ([key, value]) => {
           if (typeof value === "string") {
             newMessages[key] = await translateText(value, lang);
           } else if (typeof value === "object" && value !== null) {
@@ -160,20 +184,21 @@ async function run() {
               })
             );
           }
-        })
+        }
       );
+      await Promise.all(translationPromises);
       fs.writeFileSync(targetPath, JSON.stringify(newMessages, null, 2));
       console.log(`  ✅ Saved ${lang}.json`);
     } catch (error) {
-      // ✨ تعديل: إيقاف العملية بالكامل عند حدوث خطأ
+      // ✨ تعديل: تسجيل الخطأ وتخطي اللغة بدلاً من إيقاف كل شيء ✨
       console.error(
-        `\n❌ CRITICAL ERROR while translating to ${lang}. Halting script.`
+        `\n❌ FAILED to translate to ${lang} after all retries. Skipping this language.`
       );
-      console.error(error);
-      process.exit(1); // هذا هو السطر الأهم، يوقف كل شيء
+      console.error(`  Reason: ${error.message}`);
+      // لا نستخدم process.exit(1) هنا للسماح للبناء بالاستمرار
     }
   }
-  console.log("🎉 Translation script finished successfully!");
+  console.log("🎉 Translation script finished. Continuing with build...");
 }
 
 run();
