@@ -14,25 +14,26 @@ const transactionsToExport = computed(() => {
   return transactionStore.globallyFilteredTransactions;
 });
 
-// --- ✨ 1. تحويل الدالة إلى async ---
 const handleExportExcel = async () => {
   if (transactionsToExport.value.length === 0) {
     alert(t("no_data_to_export"));
     return;
   }
 
-  // --- ✨ 2. إعداد البيانات مع كائن التاريخ الكامل ---
+  // ✨ إصلاح 1: ترجمة البيانات قبل إرسالها إلى الإكسل
   const translatedData = transactionsToExport.value.map((transaction) => {
     const category = transactionStore.categories.find(
       (c) => c.id === transaction.category_id
     );
 
+    // بناء كائن البيانات المترجمة
     return {
-      _fullDate: new Date(transaction.created_at), // <-- إرسال كائن التاريخ
-      [t("excel.header.date")]: "", // سيتم ملؤه لاحقاً في دالة التصدير
+      [t("excel.header.date")]: new Date(
+        transaction.created_at
+      ).toLocaleString(),
       [t("excel.header.description")]: transaction.description,
       [t("excel.header.type")]: t(`transaction.type.${transaction.type}`),
-      [t("excel.header.amount")]: transaction.amount.toFixed(2),
+      [t("excel.header.amount")]: transaction.amount,
       [t("excel.header.category")]: category
         ? t(category.name.toLowerCase())
         : t("n_a"),
@@ -42,8 +43,8 @@ const handleExportExcel = async () => {
     };
   });
 
-  // --- ✨ 3. استخدام await عند استدعاء الدالة ---
   try {
+    // ✨ إصلاح 2: إرسال البيانات المترجمة
     await exportToExcel(translatedData, t("excel.file_name"));
   } catch (error) {
     console.error("Excel export failed:", error);

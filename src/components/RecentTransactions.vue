@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import "../styles/recent-transactions.css";
 import { computed } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useCurrencyStore } from "../stores/currencyStore";
@@ -63,12 +64,10 @@ const formatDateTime = (dateString: string) => {
 const getCategoryName = (id: number | null) => {
   if (!id) return t("n_a");
   const category = transactionStore.categories.find((c) => c.id === id);
-  // نفترض أن category.name هو مفتاح ترجمة (e.g., 'shopping')
   return category ? t(category.name.toLowerCase()) : t("n_a");
 };
 
 const getPriorityColor = (priority: string | null) => {
-  // نستخدم حروف صغيرة للمقارنة
   switch (priority?.toLowerCase()) {
     case "low":
       return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
@@ -132,7 +131,6 @@ const getTypeColorClass = (type: string) => {
           class="mt-1 filter-input select-input"
         >
           <option :value="null">{{ t("all_types") }}</option>
-          <!-- ✨ تعديل: استخدام المفتاح المتداخل للترجمة -->
           <option value="income">{{ t("transaction.type.income") }}</option>
           <option value="expense">{{ t("transaction.type.expense") }}</option>
         </select>
@@ -172,7 +170,6 @@ const getTypeColorClass = (type: string) => {
           class="mt-1 filter-input select-input"
         >
           <option :value="null">{{ t("all_priorities") }}</option>
-          <!-- ✨ تعديل: استخدام حروف صغيرة للقيم لتتوافق مع الـ store -->
           <option value="high">{{ t("priority_levels.high") }}</option>
           <option value="medium">{{ t("priority_levels.medium") }}</option>
           <option value="low">{{ t("priority_levels.low") }}</option>
@@ -197,12 +194,25 @@ const getTypeColorClass = (type: string) => {
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-indigo-50 dark:bg-gray-700 sticky top-0">
           <tr>
-            <th scope="col" class="table-header">{{ t("date") }}</th>
-            <th scope="col" class="table-header">{{ t("description") }}</th>
-            <th scope="col" class="table-header">{{ t("type") }}</th>
-            <th scope="col" class="table-header">{{ t("amount") }}</th>
-            <th scope="col" class="table-header">{{ t("category") }}</th>
-            <th scope="col" class="table-header">{{ t("priority") }}</th>
+            <!-- ✨ إصلاح 1: ترجمة عناوين الجدول في الإكسل -->
+            <th scope="col" class="table-header">
+              {{ t("excel.header.date") }}
+            </th>
+            <th scope="col" class="table-header">
+              {{ t("excel.header.description") }}
+            </th>
+            <th scope="col" class="table-header">
+              {{ t("excel.header.type") }}
+            </th>
+            <th scope="col" class="table-header">
+              {{ t("excel.header.amount") }}
+            </th>
+            <th scope="col" class="table-header">
+              {{ t("excel.header.category") }}
+            </th>
+            <th scope="col" class="table-header">
+              {{ t("excel.header.priority") }}
+            </th>
             <th scope="col" class="table-header">{{ t("actions") }}</th>
           </tr>
         </thead>
@@ -241,7 +251,7 @@ const getTypeColorClass = (type: string) => {
               </div>
             </td>
             <td class="table-cell">{{ transaction.description }}</td>
-            <!-- ✨ تعديل: استخدام المفتاح المتداخل للترجمة -->
+            <!-- ✨ إصلاح 2: ترجمة النوع في الجدول -->
             <td
               class="table-cell font-medium"
               :class="getTypeColorClass(transaction.type)"
@@ -265,7 +275,7 @@ const getTypeColorClass = (type: string) => {
                 :class="getPriorityColor(transaction.priority)"
                 class="priority-badge"
               >
-                <!-- ✨ تعديل: استخدام المفتاح المتداخل للترجمة -->
+                <!-- ✨ إصلاح 3: ترجمة الأولوية في الجدول -->
                 {{
                   transaction.priority
                     ? t(`priority_levels.${transaction.priority.toLowerCase()}`)
@@ -295,41 +305,3 @@ const getTypeColorClass = (type: string) => {
     </div>
   </div>
 </template>
-
-<style scoped lang="postcss">
-/* ... الأنماط تبقى كما هي ... */
-.filter-input {
-  @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
-}
-.select-input {
-  @apply appearance-none bg-no-repeat;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-size: 1.5em 1.5em;
-}
-[dir="ltr"] .select-input {
-  background-position: right 0.5rem center;
-  @apply pr-10 pl-3;
-}
-[dir="rtl"] .select-input {
-  background-position: left 0.5rem center;
-  @apply pl-10 pr-3;
-}
-.table-header {
-  @apply px-4 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider;
-}
-.table-cell {
-  @apply px-4 py-4 whitespace-nowrap text-sm;
-}
-.priority-badge {
-  @apply px-2 inline-flex text-xs leading-5 font-semibold rounded-full;
-}
-[dir="rtl"] .table-header,
-[dir="rtl"] .table-cell,
-[dir="rtl"] h3,
-[dir="rtl"] label {
-  @apply text-right;
-}
-[dir="rtl"] .flex.space-x-2 {
-  @apply space-x-reverse;
-}
-</style>

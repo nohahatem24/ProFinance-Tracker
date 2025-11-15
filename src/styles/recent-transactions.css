@@ -1,0 +1,34 @@
+.filter-input {
+  @apply block w-full rounded-md border-gray-300 dark:border-gray-600 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6;
+}
+.select-input {
+  @apply appearance-none bg-no-repeat;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e" );
+  background-size: 1.5em 1.5em;
+}
+[dir="ltr"] .select-input {
+  background-position: right 0.5rem center;
+  @apply pr-10 pl-3;
+}
+[dir="rtl"] .select-input {
+  background-position: left 0.5rem center;
+  @apply pl-10 pr-3;
+}
+.table-header {
+  @apply px-4 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider;
+}
+.table-cell {
+  @apply px-4 py-4 whitespace-nowrap text-sm;
+}
+.priority-badge {
+  @apply px-2 inline-flex text-xs leading-5 font-semibold rounded-full;
+}
+[dir="rtl"] .table-header,
+[dir="rtl"] .table-cell,
+[dir="rtl"] h3,
+[dir="rtl"] label {
+  @apply text-right;
+}
+[dir="rtl"] .flex.space-x-2 {
+  @apply space-x-reverse;
+}
