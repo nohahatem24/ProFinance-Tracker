@@ -35,20 +35,28 @@ const handleLogin = async () => {
 <template>
   <div class="min-h-screen bg-white">
     <div class="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
-      
       <!-- ✨ تعديل: القسم الداكن أصبح الآن هو الأول في الكود -->
-      <div class="hidden lg:flex flex-col justify-center items-center bg-gray-800 text-white p-12">
+      <div
+        class="hidden lg:flex flex-col justify-center items-center bg-gray-800 text-white p-12"
+      >
         <div class="text-center">
-          <img :src="darkLogo" alt="Dark Logo" class="h-auto w-80 mx-auto mb-10"/>
-          <p class="mt-4 text-xl font-medium text-gray-300">{{ t("app_subtitle") }}</p>
+          <img
+            :src="darkLogo"
+            alt="Dark Logo"
+            class="h-auto w-80 mx-auto mb-10"
+          />
+          <p class="mt-4 text-xl font-medium text-gray-300">
+            {{ t("app_subtitle") }}
+          </p>
         </div>
       </div>
 
       <!-- القسم الثاني: الفورم -->
       <!-- ✨ تعديل: تم حذف كلاس الترتيب لأنه لم يعد ضرورياً -->
-      <div class="flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12">
+      <div
+        class="flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12"
+      >
         <div class="w-full max-w-md">
-          
           <div class="lg:hidden mb-8 text-center">
             <img :src="lightLogo" alt="Logo" class="h-30 w-60 mx-auto mb-20" />
           </div>
@@ -58,7 +66,10 @@ const handleLogin = async () => {
           </h2>
           <p class="mt-2 text-center text-sm text-gray-600">
             {{ t("or") }}
-            <RouterLink to="/register" class="font-medium text-indigo-600 hover:underline">
+            <RouterLink
+              to="/register"
+              class="font-medium text-indigo-600 hover:underline"
+            >
               {{ t("sign_up_for_new_account") }}
             </RouterLink>
           </p>
@@ -66,12 +77,37 @@ const handleLogin = async () => {
           <form @submit.prevent="handleLogin" class="mt-8 space-y-6">
             <div>
               <label for="email" class="sr-only">{{ t("email") }}</label>
-              <input v-model="email" id="email" type="email" required class="auth-input" :placeholder="t('email')"/>
+              <!-- ✨ تعديل: أضفنا name="email" و autocomplete="email" -->
+              <input
+                v-model="email"
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                required
+                class="auth-input"
+                :placeholder="t('email')"
+              />
             </div>
             <div class="relative">
               <label for="password" class="sr-only">{{ t("password") }}</label>
-              <input v-model="password" id="password" :type="showPassword ? 'text' : 'password'" required class="auth-input" :placeholder="t('password')"/>
-              <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-2 flex items-center rtl:left-0 rtl:right-auto ltr:pr-3 rtl:pl-3">
+              <!-- ✨ تعديل: أضفنا name="password" و autocomplete="current-password" -->
+              <input
+                v-model="password"
+                id="password"
+                name="password"
+                :type="showPassword ? 'text' : 'password'"
+                autocomplete="current-password"
+                required
+                class="auth-input"
+                :placeholder="t('password')"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute inset-y-0 right-2 flex items-center rtl:left-0 rtl:right-auto ltr:pr-3 rtl:pl-3"
+                :aria-label="t('toggle_password_visibility')"
+              >
                 <EyeIcon v-if="!showPassword" class="h-5 w-5 text-gray-400" />
                 <EyeSlashIcon v-else class="h-5 w-5 text-gray-400" />
               </button>
@@ -80,12 +116,13 @@ const handleLogin = async () => {
               <p class="text-sm text-red-500">{{ errorMessage }}</p>
             </div>
             <div>
-              <button type="submit" class="auth-button">{{ t("sign_in") }}</button>
+              <button type="submit" class="auth-button">
+                {{ t("sign_in") }}
+              </button>
             </div>
           </form>
         </div>
       </div>
-
     </div>
   </div>
 </template>
