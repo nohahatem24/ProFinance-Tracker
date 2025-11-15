@@ -8,6 +8,7 @@
     "build": "node scripts/translate.mjs && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.ts,.cjs --fix",
+    "translate": "node scripts/translate.mjs",
     "format": "prettier --write \"src/**/*.{vue,ts,css,json}\""
   },
   "engines": {
